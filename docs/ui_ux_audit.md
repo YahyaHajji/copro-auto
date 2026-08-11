@@ -4,7 +4,7 @@ Date : 11 août 2026
 
 ## Périmètre et cible
 
-L’audit couvre toutes les surfaces PySide6 appartenant à Copro Auto : fenêtre principale, onglets Projet et Niveaux/Parties, panneau de contrôle, dialogue de licence, messages d’information/avertissement/erreur/confirmation, comparaison DWG/DXF, états de survol/focus/désactivation et fenêtre minimale de 1080 × 700.
+L’audit couvre toutes les surfaces PySide6 appartenant à Copro Auto : fenêtre principale, onglets Projet et Niveaux/Parties, panneau de contrôle, dialogue de licence, toutes les catégories de `QMessageBox` (information, succès, avertissement, erreur critique, question, licence requise et modifications non enregistrées), comparaison DWG/DXF, états de survol/focus/désactivation et fenêtre minimale de 1080 × 700.
 
 La référence visuelle reste le mode clair blanc approuvé : surfaces blanches, fond bleu-gris très pâle, texte bleu-noir, actions turquoise, accent cadastral doré. Les sélecteurs de fichiers Windows restent des surfaces natives du système.
 
@@ -14,7 +14,7 @@ La référence visuelle reste le mode clair blanc approuvé : surfaces blanches,
 2. **Fenêtre principale — Niveaux et parties : à corriger.** La table reste utilisable en grande fenêtre, mais la barre de défilement horizontale sombre et le texte d’aide collé à la table cassent la cohérence visuelle.
 3. **Fenêtre minimale 1080 × 700 : critique.** Les boutons recouvrent les titres, les tables se compressent au-delà de leur contenu utile et le texte d’aide recouvre les lignes. Le panneau de contrôle prend trop de largeur.
 4. **Dialogue de licence : critique.** Le fond reste sombre alors que les libellés utilisent les couleurs du thème clair, ce qui produit un contraste presque nul. Les actions ne sont pas suffisamment regroupées par niveau de risque.
-5. **Erreur d’activation : critique.** Le texte sombre est presque invisible sur le fond sombre du `QMessageBox`; seule l’icône attire l’attention.
+5. **Tous les `QMessageBox` : critique.** Le problème de couleurs appartient au composant global, pas uniquement à l’erreur d’activation. Les boîtes d’information, de succès après génération, d’avertissement, d’erreur critique, de question, de licence requise et de modifications non enregistrées utilisent toutes le même fond sombre incompatible avec le texte du thème clair.
 6. **Comparaison DWG/DXF : critique.** Le titre, l’explication et l’avertissement sont illisibles; `Cancel` reste en anglais; les états identique/différent/manquant n’ont aucune distinction sémantique; l’espace vide domine la fenêtre.
 7. **États de validation : à améliorer.** Le succès est lisible mais trop discret; erreurs, avertissements et succès doivent utiliser des fonds doux, une icône/forme et un libellé, jamais la couleur seule.
 
@@ -28,7 +28,7 @@ La référence visuelle reste le mode clair blanc approuvé : surfaces blanches,
 
 ## Risques UX prioritaires
 
-- **P1 — contraste bloquant :** les dialogues secondaires rendent des informations critiques pratiquement invisibles.
+- **P1 — contraste bloquant :** toutes les catégories de `QMessageBox`, ainsi que les autres dialogues secondaires, peuvent rendre leur information pratiquement invisible.
 - **P1 — reflow bloquant :** le minimum 1080 × 700 ne garantit pas une interface utilisable sans chevauchement.
 - **P1 — récupération d’erreur :** les erreurs réseau indiquent le problème, mais leur présentation ne permet pas de le lire rapidement et n’oriente pas clairement vers la nouvelle tentative ou la fermeture.
 - **P2 — incohérence de langue :** les boutons standards peuvent apparaître en anglais.
@@ -50,12 +50,12 @@ Cet audit visuel ne constitue pas une certification WCAG. Une passe clavier comp
 
 1. Étendre le thème global à `QDialog`, `QMessageBox`, `QDialogButtonBox`, menus, calendriers, fenêtres contextuelles et barres de défilement horizontales.
 2. Forcer le chrome clair des fenêtres Copro Auto sous Windows 10/11 lorsque DWM le permet, sans modifier les sélecteurs de fichiers natifs.
-3. Centraliser les messages standards afin de garantir le français, les rôles primary/secondary/danger et des valeurs de retour inchangées.
+3. Centraliser toutes les catégories de `QMessageBox` — information, succès, avertissement, erreur critique, question, licence requise et modifications non enregistrées — afin de garantir le thème clair, le français, les rôles primary/secondary/danger et des valeurs de retour inchangées.
 4. Recomposer le dialogue de licence avec un bandeau d’état sémantique, un champ clairement étiqueté et une zone destructive séparée.
 5. Recomposer la comparaison DWG/DXF avec statuts lisibles, boutons français et hauteur de table adaptée au contenu.
 6. Supprimer les minimums verticaux incompatibles dans Niveaux/Parties, donner des facteurs d’étirement aux tables et empêcher tout chevauchement à 1080 × 700.
 7. Contraindre la largeur du panneau de validation et traduire ses emplacements techniques en libellés métier.
-8. Ajouter une matrice de tests UI et une QA visuelle native avant de reconstruire `dist-updated/CoproAuto`.
+8. Ajouter une matrice de tests UI et une QA visuelle native couvrant chaque catégorie de `QMessageBox` avant de reconstruire `dist-updated/CoproAuto`.
 
 ## Preuves locales
 
@@ -68,4 +68,3 @@ Cet audit visuel ne constitue pas une certification WCAG. Une passe clavier comp
 - `work/ui-audit/06-minimum-window.png`
 - `work/ui-audit/07-user-license-dialog.png`
 - `work/ui-audit/08-user-activation-error.png`
-

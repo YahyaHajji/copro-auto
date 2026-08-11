@@ -513,7 +513,7 @@ Aucun élément technique restant pour le tableau de bord. Le test terrain sur d
 ### [ASSUMPTIONS & DECISIONS]
 
 - La référence claire blanche approuvée devient l’autorité visuelle pour toutes les surfaces appartenant à Copro Auto.
-- Le périmètre couvre la fenêtre principale, les deux onglets, le panneau de contrôle, le dialogue de licence, les messages Qt, la comparaison DWG/DXF, les menus/calendriers/popups et tous les états interactifs.
+- Le périmètre couvre la fenêtre principale, les deux onglets, le panneau de contrôle, le dialogue de licence, toutes les catégories de `QMessageBox` (information, succès, avertissement, erreur critique, question, licence requise et modifications non enregistrées), la comparaison DWG/DXF, les menus/calendriers/popups et tous les états interactifs.
 - Les sélecteurs de fichiers et dossiers restent natifs Windows et suivent donc le thème du système; ils ne sont pas remplacés par une implémentation personnalisée.
 - Aucun comportement métier, calcul, format JSON, génération DOCX, protocole de licence ou import CAD ne change.
 - Aucun nouveau framework, paquet d’icônes ou moteur web n’est ajouté. Les icônes nécessaires utilisent les ressources Qt/Windows existantes.
@@ -536,7 +536,7 @@ Aucun élément technique restant pour le tableau de bord. Le test terrain sur d
 4. Le panneau de contrôle rend succès, avertissements et erreurs avec texte, symbole et surface sémantique; les emplacements restent métier et français.
 5. À largeur réduite, l’éditeur conserve les commandes et tables sans chevauchement; le panneau de contrôle garde une largeur bornée.
 6. Le dialogue de licence montre un état lisible, une action principale claire, les actions secondaires regroupées et la désactivation isolée comme action destructive.
-7. Les messages d’erreur, avertissement, information et confirmation sont entièrement lisibles, localisés en français et conservent leurs valeurs de retour Qt.
+7. Tous les `QMessageBox` — information, succès, avertissement, erreur critique, question, licence requise et modifications non enregistrées — sont entièrement lisibles, localisés en français et conservent leurs valeurs de retour Qt.
 8. La comparaison DWG/DXF distingue manquant/différent/identique, garde la saisie manuelle par défaut et offre des actions françaises cohérentes.
 9. Les mêmes états sont rendus et vérifiés depuis le code source puis depuis le binaire packagé.
 
@@ -547,7 +547,7 @@ Aucun élément technique restant pour le tableau de bord. Le test terrain sur d
   - couvrir `QDialog`, `QMessageBox`, `QDialogButtonBox`, popups, calendriers, menus, vues et barres de défilement verticales/horizontales;
   - ajouter un petit filtre d’événements Windows pour demander un chrome clair aux fenêtres top-level Copro Auto.
 - `src/copro_auto/ui/dialogs.py`
-  - centraliser information, avertissement, erreur et confirmation;
+  - centraliser information, succès, avertissement, erreur critique, question, licence requise et modifications non enregistrées;
   - traduire explicitement OK/Oui/Non/Enregistrer/Ignorer/Annuler;
   - appliquer les rôles visuels sans changer les réponses `QMessageBox.StandardButton`.
 - `src/copro_auto/ui/license_dialog.py`
@@ -565,7 +565,7 @@ Aucun élément technique restant pour le tableau de bord. Le test terrain sur d
 - `src/copro_auto/ui/validation_panel.py`
   - rendre les trois sévérités accessibles et traduire les chemins techniques en emplacements métier.
 - `tests/test_ui.py`
-  - ajouter les états de dialogue, la localisation, les rôles sémantiques, le focus et les non-chevauchements à taille minimale.
+  - ajouter chaque catégorie de `QMessageBox`, les autres états de dialogue, la localisation, les rôles sémantiques, le focus et les non-chevauchements à taille minimale.
 
 Le domaine, les services, les modèles de documents et le serveur de licences restent hors de cette modification.
 
@@ -577,7 +577,7 @@ Le domaine, les services, les modèles de documents et le serveur de licences re
 ### [ORPHANS & PENDING]
 
 - [ ] Étendre le QSS et le chrome clair à toutes les fenêtres top-level Copro Auto.
-- [ ] Centraliser et localiser les messages Qt.
+- [ ] Centraliser, éclaircir, localiser et tester toutes les catégories de `QMessageBox`, sans exception.
 - [ ] Recomposer le dialogue de licence et ses états actif/inactif/invalide/expiré/hors ligne.
 - [ ] Recomposer la comparaison DWG/DXF et ses états identique/différent/manquant.
 - [ ] Corriger le reflow de Niveaux/Parties et le partage de largeur avec le panneau de contrôle.
@@ -590,7 +590,7 @@ Le domaine, les services, les modèles de documents et le serveur de licences re
 ### Jalons vérifiables
 
 1. **Fondations visuelles :** toutes les surfaces app-owned sont claires et contrastées; menus, calendriers, popups et scrollbars suivent les tokens.
-2. **Dialogues fiables :** licence et messages standards sont lisibles, français, accessibles au clavier et conservent les comportements actuels.
+2. **Dialogues fiables :** licence et chaque catégorie de `QMessageBox` sont lisibles, français, accessibles au clavier et conservent les comportements actuels.
 3. **Flux CAD cohérent :** comparaison DWG/DXF claire, compacte, sémantique et fonctionnellement inchangée.
 4. **Reflow desktop :** Projet et Niveaux/Parties ne se chevauchent pas à 1080 × 700; les tables restent éditables et le panneau de contrôle ne prend pas l’espace de travail.
 5. **Accessibilité vérifiable :** focus, ordre de tabulation, libellés, contrastes et états non dépendants de la couleur passent les tests prévus.

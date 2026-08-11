@@ -1,7 +1,7 @@
 # PROJECT_MAP — Plateforme d’automatisation des dossiers de copropriété
 
 Dernière mise à jour : 11 août 2026
-Statut : produit technique Windows fonctionnel, packagé et vérifié — 45 tests standards verts, 2 tests d’intégration PostgreSQL réels verts, deux smoke tests du binaire et 23 pages DOCX inspectées; le service de licences et son tableau de bord privé sont déployés sur Vercel/Neon, tandis que les validations humaines, terrain et juridiques restent ouvertes
+Statut : produit technique Windows fonctionnel, packagé et vérifié — 46 tests standards verts, 2 tests d’intégration PostgreSQL réels verts, deux smoke tests du binaire et 23 pages DOCX inspectées; le service de licences et son tableau de bord privé sont déployés sur Vercel/Neon, tandis que les validations humaines, terrain et juridiques restent ouvertes
 
 ## [ASSUMPTIONS & DECISIONS]
 
@@ -42,7 +42,7 @@ Statut : produit technique Windows fonctionnel, packagé et vérifié — 45 tes
 - **Windows 10/11 x64** — environnement opérationnel et AutoCAD.
 - **Python 3.13.12 x64** — version du build vérifié, compatible avec les dépendances retenues.
 - **PySide6 6.11.1** — interface Qt officielle en français ; PyQt5/Qt 5 ne sont pas retenus.
-- **QSS tokenisé** — thème natif professionnel à identité topographique/cadastrale, avec modes clair/sombre suivant le système, sans moteur web embarqué.
+- **QSS tokenisé** — thème natif professionnel à identité topographique/cadastrale; le mode clair blanc validé est désormais le thème produit par défaut, indépendamment du thème Windows, tandis que la palette sombre reste disponible explicitement dans le code.
 - **python-docx 1.2.0 + lxml verrouillé** — modification contrôlée des modèles DOCX et opérations OOXML ciblées.
 - **ezdxf 1.4.4** — lecture DXF R2018 ; ne lit pas directement DWG.
 - **cryptography 49.0.0** — vérification locale des jetons Ed25519 signés.
@@ -375,7 +375,7 @@ C:\Users\yahya\Saved Games\intelligent document automation platform\
 - [x] Implémenter validations et messages français.
 - [x] Implémenter sauvegarde atomique et migrations JSON.
 - [x] Implémenter le workflow manuel complet PySide6, avec synchronisation garantie entre la ligne de niveau sélectionnée et son éditeur de parties; les boutons d'ajout isolent explicitement la valeur booléenne `checked` émise par Qt des objets métier `Level` et `Part`, la sauvegarde récupère une ancienne ligne incomplète sans liste Nature en la classant `Privative`, les UUID de niveaux/parties restent stables, le contrôle affiche `Niveau · Indice` sans boucle de rafraîchissement et `Discard` fonctionne par égalité de valeur PySide6.
-- [x] Implémenter le système QSS tokenisé et l’identité visuelle topographique avec états accessibles, densité adaptée aux formulaires et mise à l’échelle Windows.
+- [x] Implémenter le système QSS tokenisé et l’identité visuelle topographique avec états accessibles, densité adaptée aux formulaires et mise à l’échelle Windows; appliquer par défaut la référence claire blanche et conserver un bouton de licence lisible au repos, au survol, au focus et à l’appui.
 - [x] Implémenter conversion DWG→DXF et détection AutoCAD.
 - [x] Implémenter parsing des tables natives exposées par ezdxf, puis repli spatial `TEXT/MTEXT` validé sur le DXF Yasmin 71.
 - [x] Implémenter comparaison manuel/CAD et décisions traçables.
@@ -390,7 +390,7 @@ C:\Users\yahya\Saved Games\intelligent document automation platform\
 - [x] Centraliser les décisions de permission aux frontières sensibles et implémenter la détection raisonnable du recul d’horloge.
 - [x] Implémenter plans individuel et office.
 - [x] Implémenter journalisation desktop rotative, logs serveur structurés et audit administratif en base.
-- [x] Créer tests unitaires, intégration, sécurité, UI et golden master : 45 tests standards verts et 2 tests PostgreSQL réels verts, incluant le clic réel sur un niveau nouvellement ajouté, l'ajout de sa partie, la sauvegarde robuste d'une ancienne ligne sans liste Nature, la stabilité des UUID, l'arrêt du rafraîchissement du contrôle, la confirmation `Discard`, l'essai hors ligne signé limité à 30 jours, le comportement DWG sans AutoCAD, l'import DXF autonome, la configuration gratuite Vercel/Neon et le tableau de bord administrateur sécurisé.
+- [x] Créer tests unitaires, intégration, sécurité, UI et golden master : 46 tests standards verts et 2 tests PostgreSQL réels verts, incluant le clic réel sur un niveau nouvellement ajouté, l'ajout de sa partie, la sauvegarde robuste d'une ancienne ligne sans liste Nature, la stabilité des UUID, l'arrêt du rafraîchissement du contrôle, la confirmation `Discard`, le thème clair et le survol lisible de la licence, l'essai hors ligne signé limité à 30 jours, le comportement DWG sans AutoCAD, l'import DXF autonome, la configuration gratuite Vercel/Neon et le tableau de bord administrateur sécurisé.
 - [x] Rendre et inspecter visuellement les six sorties Yasmin 71 : 23 pages vérifiées avec LibreOffice local isolé, pagination conforme aux modèles, corrections des emplacements narratifs PV2/règlement, remplacement des valeurs intégrées aux zones de texte et mois français déterministes. Les audits structure/style/accessibilité ont été rejoués; les alertes d’accessibilité restantes (texte alternatif d’images et marquage d’en-têtes de tableaux) proviennent des modèles définitifs.
 - [ ] Obtenir la validation humaine métier et juridique des six sorties Yasmin 71; cette décision ne peut pas être automatisée et reste obligatoire avant usage officiel/commercial.
 - [x] Renforcer le service de licences avant exposition publique : tests de révocation, expiration, empreinte incorrecte, libération de siège et limiteur; `/health` vérifie `SELECT 1`; `backup.ps1` charge `.env`, écrit atomiquement et signale les erreurs; migration, sauvegarde et restauration validées sur un cluster PostgreSQL 16 jetable réel.
@@ -398,6 +398,7 @@ C:\Users\yahya\Saved Games\intelligent document automation platform\
 - [x] Construire et tester le package Windows x64 `onedir`; les modes `licensed-offline` et `fresh-unlicensed` passent. Binaire corrigé vérifié : `dist-updated/CoproAuto/CoproAuto.exe`, SHA-256 `47659AD5E37B68E40B196D955423423EDFA79A1268D2269353761A97B1A7C530`.
 - [x] Préparer le package testeur `dist-updated/CoproAuto` avec une clé d'essai hors ligne signée valable jusqu'au 19 août 2026; smoke tests réussis, binaire SHA-256 `6A4B41767FDEABF3337B08D4E15CFD312B46EA9251476A7DFCA384711BAA54F6`.
 - [x] Reconstruire le package Windows avec la configuration publique du service en ligne; les smoke tests `licensed-offline` et `fresh-unlicensed` passent, binaire SHA-256 `6E7CEE01BB4EB8E7C2BEFF643E27276EE5A07E679409866A56D442A8B72E9D63` (non signé).
+- [x] Reconstruire `dist-updated/CoproAuto` avec le thème clair validé et les états lisibles du bouton de licence; les smoke tests `licensed-offline` et `fresh-unlicensed` passent, binaire SHA-256 `76E61FC864242B2657198529BB758F9D564CE5326F3CC54E097132561DFE1134` (non signé).
 - [ ] Signer le package Windows avec un certificat de signature de code avant la première distribution commerciale. `packaging/sign_release.ps1` signe, horodate et vérifie; le certificat reste à acquérir.
 - [ ] Tester sur un poste Windows propre réel, avec/sans AutoCAD et avec/sans réseau. Les deux démarrages automatisés `licensed-offline` et `fresh-unlicensed` passent sur le poste de développement via `packaging/smoke_test.ps1`.
 - [x] Rédiger manuels utilisateur, dictionnaire technique, mapping des modèles et déploiement.

@@ -13,12 +13,28 @@ from copro_auto.domain.models import PartNature, Project, ProjectIdentity
 from copro_auto.domain.validation import validate_project
 from copro_auto.ui.main_window import MainWindow
 from copro_auto.ui.project_editor import ProjectEditor
+from copro_auto.ui.theme import LIGHT, apply_theme
 from copro_auto.ui.validation_panel import ValidationPanel
 from sample_projects import build_yasmin_project
 
 
 def _application() -> QApplication:
     return QApplication.instance() or QApplication([])
+
+
+def test_default_theme_is_light_with_a_white_sidebar() -> None:
+    application = _application()
+
+    palette = apply_theme(application)
+
+    assert palette is LIGHT
+    assert palette.sidebar == "#FFFFFF"
+    assert f"QWidget#Sidebar {{ background: {palette.sidebar}" in application.styleSheet()
+    assert f'QPushButton[variant="ghost"] {{ color: {palette.text}' in application.styleSheet()
+    assert (
+        'QPushButton[role="license"]:hover { color: white; '
+        f"background: {palette.primary_hover}" in application.styleSheet()
+    )
 
 
 def test_project_editor_preserves_manual_surface_decompositions() -> None:

@@ -46,7 +46,7 @@ Le chemin le plus simple pour l'essai en ligne utilise Neon Free pour PostgreSQL
 1. Créer un projet Neon PostgreSQL 18 dans la région Frankfurt, sans Neon Auth.
 2. Appliquer `license_server/migrations/0001_initial.sql` avec l'URL directe Neon.
 3. Importer le dépôt GitHub privé dans un projet Vercel Hobby personnel et choisir `license_server` comme répertoire racine.
-4. Dans Vercel, fournir l'URL Neon avec pool de connexions comme `DATABASE_URL`, puis `LICENSE_SIGNING_PRIVATE_KEY`, `LICENSE_KEY_PEPPER` et `LEASE_DAYS=30` pour l'environnement Production.
+4. Dans Vercel, fournir l'URL Neon avec pool de connexions comme `DATABASE_URL`, puis `LICENSE_SIGNING_PRIVATE_KEY`, `LICENSE_KEY_PEPPER`, `LEASE_DAYS=30`, `ADMIN_PASSWORD_HASH` et `ADMIN_SESSION_SECRET` pour Production et Preview. Générer le hash du mot de passe avec `copro-admin-password`; conserver le mot de passe dans un gestionnaire de mots de passe et ne jamais l'ajouter au dépôt.
 5. Vérifier que `https://<service>.vercel.app/health` répond `200 {"status":"ok"}`.
 6. Injecter l'URL Vercel et uniquement la clé publique Ed25519 dans le desktop avec `packaging/configure_license.py`, puis reconstruire le package.
 

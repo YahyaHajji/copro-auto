@@ -12,7 +12,10 @@ from sqlalchemy import create_engine, delete, func, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 from starlette.concurrency import run_in_threadpool
+from starlette.staticfiles import StaticFiles
 
+from .admin_service import AdminService
+from .admin_web import STATIC_DIR, router as admin_router
 from .config import Settings
 from .models import ActivationAttempt, Base
 from .routes import router
@@ -68,7 +71,9 @@ def create_app(settings: Settings | None = None, *, create_schema: bool = False)
     application = FastAPI(title="Copro Auto Licence", docs_url=None, redoc_url=None, openapi_url=None)
     application.state.database_engine = engine
     application.state.session_factory = sessionmaker(engine, expire_on_commit=False)
+    application.state.settings = configuration
     application.state.license_service = LicenseService(configuration)
+    application.state.admin_service = AdminService(application.state.license_service)
     @application.middleware("http")
     async def security_headers_and_rate_limit(request: Request, call_next):
         response = None
@@ -93,6 +98,14 @@ def create_app(settings: Settings | None = None, *, create_schema: bool = False)
             response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Cache-Control"] = "no-store"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["X-Frame-Options"] = "DENY"
+        if request.url.path.startswith("/admin"):
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; script-src 'self'; style-src 'self'; "
+                "img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; "
+                "base-uri 'none'; form-action 'self'"
+            )
         return response
 
     @application.get("/health")
@@ -106,4 +119,6 @@ def create_app(settings: Settings | None = None, *, create_schema: bool = False)
         return {"status": "ok"}
 
     application.include_router(router)
+    application.include_router(admin_router)
+    application.mount("/admin/static", StaticFiles(directory=STATIC_DIR), name="admin-static")
     return application

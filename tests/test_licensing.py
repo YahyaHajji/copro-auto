@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
+from copro_auto.licensing.client import LicenseApiClient
 from copro_auto.licensing.service import (
     OFFLINE_TRIAL_ACTIVATION_PREFIX,
     OFFLINE_TRIAL_DEVICE_HASH,
@@ -15,6 +16,10 @@ from copro_auto.licensing.service import (
 )
 from copro_auto.licensing.token_store import TokenStore, TokenVerifier, device_fingerprint
 from license_server.signing import sign_claims
+
+
+def test_license_api_timeout_allows_free_host_cold_start() -> None:
+    assert LicenseApiClient("https://example.invalid").timeout >= 75.0
 
 
 def _licensing(tmp_path, now: datetime) -> tuple[LicenseService, TokenStore, Ed25519PrivateKey]:

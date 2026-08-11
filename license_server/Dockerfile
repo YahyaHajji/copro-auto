@@ -12,4 +12,4 @@ RUN useradd --create-home --uid 10001 appuser
 USER appuser
 EXPOSE 8000
 
-CMD ["uvicorn", "license_server.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+CMD ["sh", "-c", "exec uvicorn license_server.app:create_app --factory --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips '*'"]

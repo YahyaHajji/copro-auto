@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: copro-auto-license-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    rootDir: license_server
+    dockerfilePath: ./license_server/Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: LICENSE_SIGNING_PRIVATE_KEY
+        sync: false
+      - key: LICENSE_KEY_PEPPER
+        sync: false
+      - key: LEASE_DAYS
+        value: "30"

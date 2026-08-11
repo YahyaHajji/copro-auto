@@ -1,11 +1,12 @@
 # PROJECT_MAP — Plateforme d’automatisation des dossiers de copropriété
 
 Dernière mise à jour : 11 août 2026
-Statut : produit technique Windows fonctionnel, packagé et vérifié — 37 tests standards verts, 2 tests d’intégration PostgreSQL réels verts, deux smoke tests du binaire et 23 pages DOCX inspectées; un package terrain avec essai hors ligne signé de 30 jours est prêt, tandis que les validations humaines, juridiques et le déploiement commercial réel restent ouverts
+Statut : produit technique Windows fonctionnel, packagé et vérifié — 40 tests standards verts, 2 tests d’intégration PostgreSQL réels verts, deux smoke tests du binaire et 23 pages DOCX inspectées; un package terrain avec essai hors ligne signé de 30 jours est prêt, tandis que les validations humaines, juridiques et le déploiement en ligne restent ouverts
 
 ## [ASSUMPTIONS & DECISIONS]
 
 - Produit desktop local destiné aux topographes individuels et aux bureaux au Maroc.
+- L'objectif immédiat est un MVP d'apprentissage et de test privé, sans vente; l'hébergement doit utiliser les offres gratuites tant qu'elles suffisent.
 - Cible officielle : Windows 10/11 x64. Windows 7 n’est pas pris en charge.
 - Tous les postes de production connus disposent d’AutoCAD, mais l’application doit fonctionner entièrement sans import CAD.
 - La saisie manuelle est le flux principal et la source de vérité éditable.
@@ -63,7 +64,7 @@ Statut : produit technique Windows fonctionnel, packagé et vérifié — 37 tes
 - **PostgreSQL 18.x** — organisations, licences, sièges, activations et événements.
 - **SQLAlchemy 2.0.51 + psycopg 3.3.4** — persistance transactionnelle.
 - **cryptography 49.0.0 / Ed25519** — signature serveur ; clé privée uniquement sur le serveur, clé publique dans le desktop.
-- Hébergement Linux géré avec HTTPS, sauvegardes PostgreSQL et secrets injectés au déploiement.
+- MVP en ligne : Render Free pour l'API HTTPS et Neon Free PostgreSQL 18 à Francfort, avec secrets injectés au déploiement; le VPS/Caddy reste une option future.
 - Administration initiale par CLI protégée ; pas de portail SaaS ou paiement en ligne dans la première version.
 
 ### Choix de simplicité
@@ -389,11 +390,11 @@ C:\Users\yahya\Saved Games\intelligent document automation platform\
 - [x] Centraliser les décisions de permission aux frontières sensibles et implémenter la détection raisonnable du recul d’horloge.
 - [x] Implémenter plans individuel et office.
 - [x] Implémenter journalisation desktop rotative, logs serveur structurés et audit administratif en base.
-- [x] Créer tests unitaires, intégration, sécurité, UI et golden master : 37 tests standards verts et 2 tests PostgreSQL réels verts, incluant le clic réel sur un niveau nouvellement ajouté, l'ajout de sa partie, la sauvegarde robuste d'une ancienne ligne sans liste Nature, la stabilité des UUID, l'arrêt du rafraîchissement du contrôle, la confirmation `Discard`, l'essai hors ligne signé limité à 30 jours, le comportement DWG sans AutoCAD et l'import DXF autonome.
+- [x] Créer tests unitaires, intégration, sécurité, UI et golden master : 40 tests standards verts et 2 tests PostgreSQL réels verts, incluant le clic réel sur un niveau nouvellement ajouté, l'ajout de sa partie, la sauvegarde robuste d'une ancienne ligne sans liste Nature, la stabilité des UUID, l'arrêt du rafraîchissement du contrôle, la confirmation `Discard`, l'essai hors ligne signé limité à 30 jours, le comportement DWG sans AutoCAD, l'import DXF autonome et la configuration gratuite Render/Neon.
 - [x] Rendre et inspecter visuellement les six sorties Yasmin 71 : 23 pages vérifiées avec LibreOffice local isolé, pagination conforme aux modèles, corrections des emplacements narratifs PV2/règlement, remplacement des valeurs intégrées aux zones de texte et mois français déterministes. Les audits structure/style/accessibilité ont été rejoués; les alertes d’accessibilité restantes (texte alternatif d’images et marquage d’en-têtes de tableaux) proviennent des modèles définitifs.
 - [ ] Obtenir la validation humaine métier et juridique des six sorties Yasmin 71; cette décision ne peut pas être automatisée et reste obligatoire avant usage officiel/commercial.
 - [x] Renforcer le service de licences avant exposition publique : tests de révocation, expiration, empreinte incorrecte, libération de siège et limiteur; `/health` vérifie `SELECT 1`; `backup.ps1` charge `.env`, écrit atomiquement et signale les erreurs; migration, sauvegarde et restauration validées sur un cluster PostgreSQL 16 jetable réel.
-- [ ] Déployer réellement le service HTTPS, PostgreSQL 18, sauvegardes et secrets. Les fichiers Docker/Caddy/PostgreSQL et la procédure sont prêts; les tests PostgreSQL locaux sont réels, mais le moteur Docker de ce poste reste indisponible. Restent le test Compose complet, le VPS, le domaine et les secrets de production.
+- [ ] Déployer réellement le MVP HTTPS sur Render Free et Neon Free. Le Blueprint `render.yaml`, le port dynamique, le délai client compatible avec le redémarrage d'un service gratuit et la procédure sont prêts et testés. Le formulaire Neon est préparé pour PostgreSQL 18 à Francfort; Render exige encore que le propriétaire du compte effectue sa vérification par carte avant la création du service.
 - [x] Construire et tester le package Windows x64 `onedir`; les modes `licensed-offline` et `fresh-unlicensed` passent. Binaire corrigé vérifié : `dist-updated/CoproAuto/CoproAuto.exe`, SHA-256 `47659AD5E37B68E40B196D955423423EDFA79A1268D2269353761A97B1A7C530`.
 - [x] Préparer le package testeur `dist-updated/CoproAuto` avec une clé d'essai hors ligne signée valable jusqu'au 19 août 2026; smoke tests réussis, binaire SHA-256 `6A4B41767FDEABF3337B08D4E15CFD312B46EA9251476A7DFCA384711BAA54F6`.
 - [ ] Signer le package Windows avec un certificat de signature de code avant la première distribution commerciale. `packaging/sign_release.ps1` signe, horodate et vérifie; le certificat reste à acquérir.

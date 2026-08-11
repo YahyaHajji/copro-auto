@@ -213,6 +213,34 @@ def test_activation_rate_limit_blocks_the_twenty_first_attempt(tmp_path) -> None
     assert responses[20].headers["Cache-Control"] == "no-store"
 
 
+def test_activation_rate_limit_is_shared_between_serverless_instances(tmp_path) -> None:
+    private = Ed25519PrivateKey.generate()
+    settings = Settings(
+        f"sqlite:///{tmp_path / 'shared-licenses.db'}",
+        private,
+        "shared-test-pepper-with-enough-entropy",
+        30,
+    )
+    first = TestClient(create_app(settings, create_schema=True))
+    second = TestClient(create_app(settings))
+    payload = {
+        "license_key": "COPRO-INVALID-KEY",
+        "device_hash": "a" * 64,
+        "device_label": "PC Bureau",
+        "app_version": "0.1.0",
+    }
+
+    responses = [
+        (first if index % 2 == 0 else second).post("/v1/activate", json=payload)
+        for index in range(20)
+    ]
+    blocked = second.post("/v1/activate", json=payload)
+
+    assert all(response.status_code == 404 for response in responses)
+    assert blocked.status_code == 429
+    assert blocked.json()["detail"]["code"] == "rate_limited"
+
+
 def test_health_checks_database_connectivity(tmp_path) -> None:
     app, _verifier = _application(tmp_path)
     client = TestClient(app)

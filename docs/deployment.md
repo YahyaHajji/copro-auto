@@ -39,20 +39,20 @@ $env:PYTHONPATH = "license_server/src"
 
 La ligne privée va uniquement dans le secret `LICENSE_SIGNING_PRIVATE_KEY` du serveur. La ligne publique est injectée dans le desktop. Une perte de la clé privée empêche de signer de nouveaux leases; une fuite exige rotation et nouvelle version du desktop.
 
-## MVP d'apprentissage gratuit : Neon + Render
+## MVP d'apprentissage gratuit : Neon + Vercel
 
-Le chemin le plus simple pour l'essai en ligne utilise Neon Free pour PostgreSQL et Render Free pour l'API HTTPS. Le fichier `render.yaml` décrit le service Docker, le contrôle `/health`, la région de Francfort et les trois secrets à saisir manuellement. Aucun secret ni URL PostgreSQL n'est enregistré dans Git.
+Le chemin le plus simple pour l'essai en ligne utilise Neon Free pour PostgreSQL et Vercel Hobby pour l'API HTTPS. Vercel exécute directement l'application FastAPI depuis `license_server/app.py`. Aucun secret ni URL PostgreSQL n'est enregistré dans Git.
 
 1. Créer un projet Neon PostgreSQL 18 dans la région Frankfurt, sans Neon Auth.
 2. Appliquer `license_server/migrations/0001_initial.sql` avec l'URL directe Neon.
-3. Déployer le dépôt privé comme Blueprint Render à partir de `render.yaml`.
-4. Dans Render, fournir l'URL Neon avec pool de connexions comme `DATABASE_URL`, puis `LICENSE_SIGNING_PRIVATE_KEY` et `LICENSE_KEY_PEPPER`.
-5. Vérifier que `https://<service>.onrender.com/health` répond `200 {"status":"ok"}`.
-6. Injecter l'URL Render et uniquement la clé publique Ed25519 dans le desktop avec `packaging/configure_license.py`, puis reconstruire le package.
+3. Importer le dépôt GitHub privé dans un projet Vercel Hobby personnel et choisir `license_server` comme répertoire racine.
+4. Dans Vercel, fournir l'URL Neon avec pool de connexions comme `DATABASE_URL`, puis `LICENSE_SIGNING_PRIVATE_KEY`, `LICENSE_KEY_PEPPER` et `LEASE_DAYS=30` pour l'environnement Production.
+5. Vérifier que `https://<service>.vercel.app/health` répond `200 {"status":"ok"}`.
+6. Injecter l'URL Vercel et uniquement la clé publique Ed25519 dans le desktop avec `packaging/configure_license.py`, puis reconstruire le package.
 
-Le service gratuit Render peut s'endormir lorsqu'il est inactif. Le client accorde donc jusqu'à 75 secondes au premier appel de licence afin de laisser le service redémarrer. Render peut demander une carte pour vérifier l'identité même lorsque le plan sélectionné est gratuit; cette opération doit être faite directement par le propriétaire du compte.
+Vercel Hobby convient uniquement à ce MVP personnel et non commercial. Le limiteur d'activation est conservé dans PostgreSQL afin de rester commun aux instances serverless et de survivre à leurs redémarrages; seule une empreinte HMAC de l'adresse cliente est enregistrée.
 
-Pour les migrations, sauvegardes ou commandes administratives, utiliser l'URL Neon directe. Pour l'API Render, utiliser l'URL Neon avec pool de connexions. Les URL et clés restent uniquement dans les gestionnaires de secrets Neon/Render ou dans l'environnement local temporaire.
+Pour les migrations, sauvegardes ou commandes administratives, utiliser l'URL Neon directe. Pour l'API Vercel, utiliser l'URL Neon avec pool de connexions. Les URL et clés restent uniquement dans les gestionnaires de secrets Neon/Vercel ou dans l'environnement local temporaire.
 
 ## Service HTTPS sur VPS (option future)
 

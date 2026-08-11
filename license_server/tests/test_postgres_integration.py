@@ -65,7 +65,7 @@ def test_initial_migration_is_idempotent_on_real_postgresql(postgres_url) -> Non
             ).fetchall()
         }
 
-    assert tables == {"organizations", "licenses", "activations", "audit_events"}
+    assert tables == {"organizations", "licenses", "activations", "audit_events", "activation_attempts"}
 
     settings = Settings(postgres_url, Ed25519PrivateKey.generate(), "postgres-test-pepper", 30)
     app = create_app(settings)

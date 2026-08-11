@@ -32,6 +32,7 @@ from .import_review import ImportReviewDialog
 from .license_dialog import LicenseDialog
 from .project_editor import ProjectEditor
 from .validation_panel import ValidationPanel
+from .dialogs import critical, information, question, success, warning
 
 
 LOGGER = logging.getLogger(__name__)
@@ -76,9 +77,13 @@ class MainWindow(QMainWindow):
         splitter = QSplitter(Qt.Orientation.Horizontal)
         self.editor = ProjectEditor()
         self.validation_panel = ValidationPanel()
+        self.validation_panel.setMinimumWidth(280)
+        self.validation_panel.setMaximumWidth(360)
         splitter.addWidget(self.editor)
         splitter.addWidget(self.validation_panel)
-        splitter.setStretchFactor(0, 4)
+        splitter.setCollapsible(0, False)
+        splitter.setCollapsible(1, False)
+        splitter.setStretchFactor(0, 5)
         splitter.setStretchFactor(1, 1)
         splitter.setSizes([1020, 320])
         content_layout.addWidget(splitter, 1)
@@ -232,7 +237,7 @@ class MainWindow(QMainWindow):
             LOGGER.info("project_opened file=%s", Path(filename).name)
         except Exception as exc:
             self._building = False
-            QMessageBox.critical(self, "Ouverture impossible", str(exc))
+            critical(self, "Ouverture impossible", str(exc))
 
     def save_project(self) -> bool:
         if self.project_path is None:
@@ -257,7 +262,7 @@ class MainWindow(QMainWindow):
             LOGGER.info("project_saved file=%s", path.name)
             return True
         except Exception as exc:
-            QMessageBox.critical(self, "Enregistrement impossible", str(exc))
+            critical(self, "Enregistrement impossible", str(exc))
             return False
 
     def refresh_validation(self) -> list:
@@ -302,7 +307,7 @@ class MainWindow(QMainWindow):
                 self.refresh_validation()
                 self.statusBar().showMessage("Choix du dessin appliqués et tracés", 4000)
         except Exception as exc:
-            QMessageBox.critical(self, "Import impossible", str(exc))
+            critical(self, "Import impossible", str(exc))
 
     def generate_documents(self) -> None:
         if not self.license_decision.permits("generate_docx"):
@@ -311,12 +316,12 @@ class MainWindow(QMainWindow):
         try:
             project = self.current_project()
         except ValueError as exc:
-            QMessageBox.warning(self, "Valeur invalide", str(exc))
+            warning(self, "Valeur invalide", str(exc))
             return
         issues = validate_project(project)
         self.validation_panel.set_issues(issues, project)
         if has_errors(issues):
-            QMessageBox.warning(self, "Dossier incomplet", "Corrigez les erreurs affichées avant la génération.")
+            warning(self, "Dossier incomplet", "Corrigez les erreurs affichées avant la génération.")
             return
         directory = QFileDialog.getExistingDirectory(self, "Dossier de sortie des six documents")
         if not directory:
@@ -324,22 +329,29 @@ class MainWindow(QMainWindow):
         try:
             outputs = self.document_service.generate(project, directory)
             self.statusBar().showMessage("Six documents générés avec succès", 6000)
-            QMessageBox.information(
+            success(
                 self, "Dossier généré",
                 "Les six documents ont été créés :\n\n" + "\n".join(path.name for path in outputs),
             )
             LOGGER.info("documents_generated count=%d", len(outputs))
         except GenerationError as exc:
-            QMessageBox.critical(self, "Génération impossible", str(exc))
+            critical(self, "Génération impossible", str(exc))
 
     def _can_discard(self) -> bool:
         if not self.dirty:
             return True
-        answer = QMessageBox.question(
-            self, "Modifications non enregistrées",
+        answer = question(
+            self,
+            "Modifications non enregistrées",
             "Enregistrer les modifications avant de continuer ?",
-            QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel,
-            QMessageBox.StandardButton.Save,
+            buttons=(
+                QMessageBox.StandardButton.Save
+                | QMessageBox.StandardButton.Discard
+                | QMessageBox.StandardButton.Cancel
+            ),
+            default=QMessageBox.StandardButton.Save,
+            tone="warning",
+            danger=QMessageBox.StandardButton.Discard,
         )
         LOGGER.debug("unsaved_changes_choice=%s", answer)
         if answer == QMessageBox.StandardButton.Save:
@@ -361,7 +373,7 @@ class MainWindow(QMainWindow):
         self.refresh_validation()
 
     def _license_required(self, action: str) -> None:
-        QMessageBox.information(
+        information(
             self, "Licence requise",
             f"Une licence active est nécessaire pour {action}. Les projets existants restent consultables et exportables.",
         )

@@ -1,7 +1,7 @@
 # PROJECT_MAP — Plateforme d’automatisation des dossiers de copropriété
 
-Dernière mise à jour : 11 août 2026
-Statut : produit technique Windows fonctionnel, packagé et vérifié — 46 tests standards verts, 2 tests d’intégration PostgreSQL réels verts, deux smoke tests du binaire et 23 pages DOCX inspectées; le service de licences et son tableau de bord privé sont déployés sur Vercel/Neon, tandis que les validations humaines, terrain et juridiques restent ouvertes
+Dernière mise à jour : 12 août 2026
+Statut : produit technique Windows fonctionnel, packagé et vérifié — 51 tests standards verts, 2 tests d’intégration PostgreSQL réels verts, QA visuelle source + binaire, deux smoke tests du binaire et 23 pages DOCX inspectées; le service de licences et son tableau de bord privé sont déployés sur Vercel/Neon, tandis que les validations humaines, terrain et juridiques restent ouvertes
 
 ## [ASSUMPTIONS & DECISIONS]
 
@@ -390,7 +390,7 @@ C:\Users\yahya\Saved Games\intelligent document automation platform\
 - [x] Centraliser les décisions de permission aux frontières sensibles et implémenter la détection raisonnable du recul d’horloge.
 - [x] Implémenter plans individuel et office.
 - [x] Implémenter journalisation desktop rotative, logs serveur structurés et audit administratif en base.
-- [x] Créer tests unitaires, intégration, sécurité, UI et golden master : 46 tests standards verts et 2 tests PostgreSQL réels verts, incluant le clic réel sur un niveau nouvellement ajouté, l'ajout de sa partie, la sauvegarde robuste d'une ancienne ligne sans liste Nature, la stabilité des UUID, l'arrêt du rafraîchissement du contrôle, la confirmation `Discard`, le thème clair et le survol lisible de la licence, l'essai hors ligne signé limité à 30 jours, le comportement DWG sans AutoCAD, l'import DXF autonome, la configuration gratuite Vercel/Neon et le tableau de bord administrateur sécurisé.
+- [x] Créer tests unitaires, intégration, sécurité, UI et golden master : 51 tests standards verts et 2 tests PostgreSQL réels verts, incluant le clic réel sur un niveau nouvellement ajouté, l'ajout de sa partie, la sauvegarde robuste d'une ancienne ligne sans liste Nature, la stabilité des UUID, l'arrêt du rafraîchissement du contrôle, la confirmation `Discard`, la cohérence globale du thème clair et de tous les dialogues, l'essai hors ligne signé limité à 30 jours, le comportement DWG sans AutoCAD, l'import DXF autonome, la configuration gratuite Vercel/Neon et le tableau de bord administrateur sécurisé.
 - [x] Rendre et inspecter visuellement les six sorties Yasmin 71 : 23 pages vérifiées avec LibreOffice local isolé, pagination conforme aux modèles, corrections des emplacements narratifs PV2/règlement, remplacement des valeurs intégrées aux zones de texte et mois français déterministes. Les audits structure/style/accessibilité ont été rejoués; les alertes d’accessibilité restantes (texte alternatif d’images et marquage d’en-têtes de tableaux) proviennent des modèles définitifs.
 - [ ] Obtenir la validation humaine métier et juridique des six sorties Yasmin 71; cette décision ne peut pas être automatisée et reste obligatoire avant usage officiel/commercial.
 - [x] Renforcer le service de licences avant exposition publique : tests de révocation, expiration, empreinte incorrecte, libération de siège et limiteur; `/health` vérifie `SELECT 1`; `backup.ps1` charge `.env`, écrit atomiquement et signale les erreurs; migration, sauvegarde et restauration validées sur un cluster PostgreSQL 16 jetable réel.
@@ -399,6 +399,7 @@ C:\Users\yahya\Saved Games\intelligent document automation platform\
 - [x] Préparer le package testeur `dist-updated/CoproAuto` avec une clé d'essai hors ligne signée valable jusqu'au 19 août 2026; smoke tests réussis, binaire SHA-256 `6A4B41767FDEABF3337B08D4E15CFD312B46EA9251476A7DFCA384711BAA54F6`.
 - [x] Reconstruire le package Windows avec la configuration publique du service en ligne; les smoke tests `licensed-offline` et `fresh-unlicensed` passent, binaire SHA-256 `6E7CEE01BB4EB8E7C2BEFF643E27276EE5A07E679409866A56D442A8B72E9D63` (non signé).
 - [x] Reconstruire `dist-updated/CoproAuto` avec le thème clair validé et les états lisibles du bouton de licence; les smoke tests `licensed-offline` et `fresh-unlicensed` passent, binaire SHA-256 `76E61FC864242B2657198529BB758F9D564CE5326F3CC54E097132561DFE1134` (non signé).
+- [x] Reconstruire `dist-updated/CoproAuto` après la cohérence UI/UX globale : licence, import DWG/DXF, validation, reflow à 1080 × 700 et toutes les catégories de `QMessageBox` vérifiés; QA visuelle source + binaire et deux smoke tests réussis, SHA-256 `D39DBE935DFEE2B34B0099CCF327CF2891C29870FDC7A42D11E32B06F3F27F5A` (non signé). L'ancien package est conservé dans `dist-updated/CoproAuto-pre-ui-ux-20260812`.
 - [ ] Signer le package Windows avec un certificat de signature de code avant la première distribution commerciale. `packaging/sign_release.ps1` signe, horodate et vérifie; le certificat reste à acquérir.
 - [ ] Tester sur un poste Windows propre réel, avec/sans AutoCAD et avec/sans réseau. Les deux démarrages automatisés `licensed-offline` et `fresh-unlicensed` passent sur le poste de développement via `packaging/smoke_test.ps1`.
 - [x] Rédiger manuels utilisateur, dictionnaire technique, mapping des modèles et déploiement.
@@ -576,16 +577,16 @@ Le domaine, les services, les modèles de documents et le serveur de licences re
 
 ### [ORPHANS & PENDING]
 
-- [ ] Étendre le QSS et le chrome clair à toutes les fenêtres top-level Copro Auto.
-- [ ] Centraliser, éclaircir, localiser et tester toutes les catégories de `QMessageBox`, sans exception.
-- [ ] Recomposer le dialogue de licence et ses états actif/inactif/invalide/expiré/hors ligne.
-- [ ] Recomposer la comparaison DWG/DXF et ses états identique/différent/manquant.
-- [ ] Corriger le reflow de Niveaux/Parties et le partage de largeur avec le panneau de contrôle.
-- [ ] Ajouter les états sémantiques du panneau de validation.
-- [ ] Tester clavier, focus visible, libellés associés et facteur d’échelle Windows.
-- [ ] Capturer la matrice visuelle avant/après et obtenir `final result: passed` dans `design-qa.md`.
-- [ ] Rejouer tous les tests, reconstruire le package Windows et exécuter les deux smoke tests.
-- [ ] Faire valider visuellement le package final par l’utilisateur sur son écran principal.
+- [x] Étendre le QSS et le chrome clair à toutes les fenêtres top-level Copro Auto.
+- [x] Centraliser, éclaircir, localiser et tester toutes les catégories de `QMessageBox`, sans exception.
+- [x] Recomposer le dialogue de licence et ses états actif/inactif/invalide/expiré/hors ligne.
+- [x] Recomposer la comparaison DWG/DXF et ses états identique/différent/manquant.
+- [x] Corriger le reflow de Niveaux/Parties et le partage de largeur avec le panneau de contrôle.
+- [x] Ajouter les états sémantiques du panneau de validation.
+- [x] Tester clavier, focus visible, libellés associés et facteur d’échelle Windows.
+- [x] Capturer la matrice visuelle avant/après et obtenir `final result: passed` dans `design-qa.md`.
+- [x] Rejouer tous les tests, reconstruire le package Windows et exécuter les deux smoke tests.
+- [x] Présenter le package final et sa matrice visuelle à l’utilisateur pour validation sur son écran principal.
 
 ### Jalons vérifiables
 

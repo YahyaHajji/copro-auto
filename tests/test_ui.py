@@ -149,10 +149,9 @@ def test_discard_unsaved_changes_uses_button_value(monkeypatch) -> None:
     window = MainWindow()
     window.dirty = True
 
-    class DiscardResult:
-        def __eq__(self, other: object) -> bool:
-            return other == QMessageBox.StandardButton.Discard
-
-    monkeypatch.setattr(QMessageBox, "question", lambda *_args, **_kwargs: DiscardResult())
+    monkeypatch.setattr(
+        "copro_auto.ui.main_window.question",
+        lambda *_args, **_kwargs: QMessageBox.StandardButton.Discard,
+    )
 
     assert window._can_discard()

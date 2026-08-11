@@ -158,8 +158,8 @@ class ProjectEditor(QFrame):
         self.levels.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         for column in range(1, len(LEVEL_COLUMNS)):
             self.levels.horizontalHeader().setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
-        self.levels.setMinimumHeight(170)
-        layout.addWidget(self.levels)
+        self.levels.setMinimumHeight(96)
+        layout.addWidget(self.levels, 2)
 
         part_header = QHBoxLayout()
         self.part_title = QLabel("Parties du niveau sélectionné")
@@ -184,14 +184,14 @@ class ProjectEditor(QFrame):
         for column, width in enumerate(part_widths):
             self.parts.setColumnWidth(column, width)
         self.parts.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
-        self.parts.setMinimumHeight(280)
-        layout.addWidget(self.parts, 1)
-        help_text = QLabel(
+        self.parts.setMinimumHeight(128)
+        layout.addWidget(self.parts, 3)
+        self.levels_help = QLabel(
             "Saisie principale : renseignez les valeurs mesurées. L’import DWG/DXF sera proposé ensuite comme comparaison, jamais comme écrasement automatique."
         )
-        help_text.setWordWrap(True)
-        help_text.setProperty("role", "muted")
-        layout.addWidget(help_text)
+        self.levels_help.setWordWrap(True)
+        self.levels_help.setProperty("role", "helper")
+        layout.addWidget(self.levels_help)
         return page
 
     def _connect_identity_fields(self) -> None:

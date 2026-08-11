@@ -51,6 +51,8 @@ docker compose up -d --build
 curl https://licence.votre-domaine.ma/health
 ```
 
+`/health` exécute réellement `SELECT 1` sur la base. Il répond `200 {"status":"ok"}` quand PostgreSQL est joignable et `503 {"status":"unavailable"}` si la connexion échoue. Le superviseur ne doit donc considérer le service prêt que sur HTTP 200.
+
 Une validation locale exige un vrai moteur Docker. Un exécutable ou stub nommé `docker` ne suffit pas : vérifier que `docker version` affiche une section serveur avant de considérer PostgreSQL, la migration et l'API comme testés. La première mise en production doit ensuite tester création, activation, rafraîchissement, désactivation, sauvegarde et restauration sur le VPS réel.
 
 Caddy obtient et renouvelle automatiquement le certificat TLS. PostgreSQL n’est pas exposé publiquement. L’API ne reçoit aucune donnée de dossier.
@@ -73,7 +75,25 @@ La clé brute est affichée une seule fois; la base ne conserve que son HMAC SHA
 
 ## Sauvegarde et contrôle
 
-- exécuter `backup.ps1` vers un volume externe et tester régulièrement une restauration ;
+- copier `.env.example` vers `.env`, renseigner les secrets, puis créer une sauvegarde sur un volume externe :
+
+```powershell
+& deploy\license_server\backup.ps1 -OutputDirectory 'D:\Sauvegardes\CoproAuto'
+```
+
+Le script charge automatiquement `deploy/license_server/.env`, tout en laissant les variables du processus prioritaires comme Docker Compose. Il lance `pg_dump` dans le conteneur, écrit d'abord un fichier `.partial`, refuse une sortie vide et ne publie le fichier `.sql` final qu'après un code de sortie réussi. Les mots de passe ne sont ni affichés ni placés dans les arguments de commande.
+
+Les tests PostgreSQL réels exigent une base jetable dont le nom commence par `copro_auto_test_` :
+
+```powershell
+$env:TEST_POSTGRES_URL = 'postgresql+psycopg://test_user:test_password@127.0.0.1:5432/copro_auto_test_hardening'
+$env:TEST_POSTGRES_BIN = 'C:\Program Files\PostgreSQL\16\bin'
+& .\.venv\Scripts\python.exe -m pytest license_server\tests\test_postgres_integration.py -q
+```
+
+Ce test applique deux fois la migration, exerce l'API sur PostgreSQL, lance le vrai `backup.ps1` avec `pg_dump`, restaure le fichier dans une seconde base jetable et vérifie les données restaurées. Ne jamais pointer `TEST_POSTGRES_URL` vers une base de production.
+
+- tester une restauration après chaque modification du schéma et régulièrement en exploitation ;
 - surveiller `/health`, les erreurs API et l’espace disque ;
 - conserver `.env`, clé privée et sauvegardes hors du dépôt ;
 - limiter l’accès SSH et appliquer les mises à jour de sécurité ;

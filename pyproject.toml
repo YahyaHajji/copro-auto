@@ -30,3 +30,6 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests", "license_server/src"]
 testpaths = ["tests", "license_server/tests"]
+markers = [
+  "postgres: integration tests that require TEST_POSTGRES_URL and a disposable real PostgreSQL database",
+]

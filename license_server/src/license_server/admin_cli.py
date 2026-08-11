@@ -11,6 +11,15 @@ from .models import Activation, License
 from .service import LicenseService
 
 
+def release_activation(session: Session, activation_id: str) -> None:
+    activation = session.get(Activation, activation_id)
+    if activation is None:
+        raise LookupError("Activation introuvable")
+    activation.status = "deactivated"
+    activation.deactivated_at = datetime.now(timezone.utc)
+    session.commit()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Administration des licences Copro Auto")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -55,12 +64,10 @@ def main() -> int:
             session.commit()
             print("revoked")
         else:
-            activation = session.get(Activation, args.activation_id)
-            if activation is None:
-                raise SystemExit("Activation introuvable")
-            activation.status = "deactivated"
-            activation.deactivated_at = datetime.now(timezone.utc)
-            session.commit()
+            try:
+                release_activation(session, args.activation_id)
+            except LookupError as exc:
+                raise SystemExit(str(exc)) from exc
             print("released")
     return 0
 

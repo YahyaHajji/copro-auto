@@ -1,7 +1,7 @@
 # PROJECT_MAP — Plateforme d’automatisation des dossiers de copropriété
 
 Dernière mise à jour : 11 août 2026
-Statut : produit technique Windows fonctionnel, packagé et vérifié — 40 tests standards verts, 2 tests d’intégration PostgreSQL réels verts, deux smoke tests du binaire et 23 pages DOCX inspectées; un package terrain avec essai hors ligne signé de 30 jours est prêt, tandis que les validations humaines, juridiques et le déploiement en ligne restent ouverts
+Statut : produit technique Windows fonctionnel, packagé et vérifié — 45 tests standards verts, 2 tests d’intégration PostgreSQL réels verts, deux smoke tests du binaire et 23 pages DOCX inspectées; le service de licences et son tableau de bord privé sont déployés sur Vercel/Neon, tandis que les validations humaines, terrain et juridiques restent ouvertes
 
 ## [ASSUMPTIONS & DECISIONS]
 
@@ -390,13 +390,14 @@ C:\Users\yahya\Saved Games\intelligent document automation platform\
 - [x] Centraliser les décisions de permission aux frontières sensibles et implémenter la détection raisonnable du recul d’horloge.
 - [x] Implémenter plans individuel et office.
 - [x] Implémenter journalisation desktop rotative, logs serveur structurés et audit administratif en base.
-- [x] Créer tests unitaires, intégration, sécurité, UI et golden master : 40 tests standards verts et 2 tests PostgreSQL réels verts, incluant le clic réel sur un niveau nouvellement ajouté, l'ajout de sa partie, la sauvegarde robuste d'une ancienne ligne sans liste Nature, la stabilité des UUID, l'arrêt du rafraîchissement du contrôle, la confirmation `Discard`, l'essai hors ligne signé limité à 30 jours, le comportement DWG sans AutoCAD, l'import DXF autonome et la configuration gratuite Vercel/Neon.
+- [x] Créer tests unitaires, intégration, sécurité, UI et golden master : 45 tests standards verts et 2 tests PostgreSQL réels verts, incluant le clic réel sur un niveau nouvellement ajouté, l'ajout de sa partie, la sauvegarde robuste d'une ancienne ligne sans liste Nature, la stabilité des UUID, l'arrêt du rafraîchissement du contrôle, la confirmation `Discard`, l'essai hors ligne signé limité à 30 jours, le comportement DWG sans AutoCAD, l'import DXF autonome, la configuration gratuite Vercel/Neon et le tableau de bord administrateur sécurisé.
 - [x] Rendre et inspecter visuellement les six sorties Yasmin 71 : 23 pages vérifiées avec LibreOffice local isolé, pagination conforme aux modèles, corrections des emplacements narratifs PV2/règlement, remplacement des valeurs intégrées aux zones de texte et mois français déterministes. Les audits structure/style/accessibilité ont été rejoués; les alertes d’accessibilité restantes (texte alternatif d’images et marquage d’en-têtes de tableaux) proviennent des modèles définitifs.
 - [ ] Obtenir la validation humaine métier et juridique des six sorties Yasmin 71; cette décision ne peut pas être automatisée et reste obligatoire avant usage officiel/commercial.
 - [x] Renforcer le service de licences avant exposition publique : tests de révocation, expiration, empreinte incorrecte, libération de siège et limiteur; `/health` vérifie `SELECT 1`; `backup.ps1` charge `.env`, écrit atomiquement et signale les erreurs; migration, sauvegarde et restauration validées sur un cluster PostgreSQL 16 jetable réel.
 - [x] Déployer le MVP HTTPS sur Vercel Hobby et Neon Free : API FastAPI en production sur `https://copro-auto-license-api.vercel.app`, PostgreSQL 18 à Francfort, migration appliquée, secrets sensibles injectés, `/health` vert et parcours distant activate → verify → refresh → status → deactivate validé.
 - [x] Construire et tester le package Windows x64 `onedir`; les modes `licensed-offline` et `fresh-unlicensed` passent. Binaire corrigé vérifié : `dist-updated/CoproAuto/CoproAuto.exe`, SHA-256 `47659AD5E37B68E40B196D955423423EDFA79A1268D2269353761A97B1A7C530`.
 - [x] Préparer le package testeur `dist-updated/CoproAuto` avec une clé d'essai hors ligne signée valable jusqu'au 19 août 2026; smoke tests réussis, binaire SHA-256 `6A4B41767FDEABF3337B08D4E15CFD312B46EA9251476A7DFCA384711BAA54F6`.
+- [x] Reconstruire le package Windows avec la configuration publique du service en ligne; les smoke tests `licensed-offline` et `fresh-unlicensed` passent, binaire SHA-256 `6E7CEE01BB4EB8E7C2BEFF643E27276EE5A07E679409866A56D442A8B72E9D63` (non signé).
 - [ ] Signer le package Windows avec un certificat de signature de code avant la première distribution commerciale. `packaging/sign_release.ps1` signe, horodate et vérifie; le certificat reste à acquérir.
 - [ ] Tester sur un poste Windows propre réel, avec/sans AutoCAD et avec/sans réseau. Les deux démarrages automatisés `licensed-offline` et `fresh-unlicensed` passent sur le poste de développement via `packaging/smoke_test.ps1`.
 - [x] Rédiger manuels utilisateur, dictionnaire technique, mapping des modèles et déploiement.
@@ -497,9 +498,7 @@ C:\Users\yahya\Saved Games\intelligent document automation platform\
 
 ### [ORPHANS & PENDING]
 
-- [ ] Déployer d'abord en Preview, exécuter les tests de sécurité et le parcours visuel, puis promouvoir en Production.
-- [ ] Refaire un smoke test production et vérifier les erreurs Vercel ainsi que l'audit Neon.
-- [ ] Reconstruire ensuite le package Windows connecté au serveur en ligne et tester sur deux ordinateurs.
+Aucun élément technique restant pour le tableau de bord. Le test terrain sur deux ordinateurs reste suivi dans le jalon global de distribution.
 
 ### Jalons du tableau de bord
 

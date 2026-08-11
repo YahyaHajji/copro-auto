@@ -71,4 +71,20 @@ class AuditEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
+class ActivationAttempt(Base):
+    __tablename__ = "activation_attempts"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    address_hash: Mapped[str] = mapped_column(String(64))
+    attempted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class AdminLoginAttempt(Base):
+    __tablename__ = "admin_login_attempts"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    address_hash: Mapped[str] = mapped_column(String(64))
+    attempted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
 Index("ix_activation_license_status", Activation.license_id, Activation.status)
+Index("ix_activation_attempt_address_time", ActivationAttempt.address_hash, ActivationAttempt.attempted_at)
+Index("ix_admin_login_attempt_address_time", AdminLoginAttempt.address_hash, AdminLoginAttempt.attempted_at)

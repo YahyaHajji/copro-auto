@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Copro Auto — Administration des licences</title>
+  <link rel="stylesheet" href="/admin/static/admin.css">
+  <script src="/admin/static/admin.js" defer></script>
+</head>
+<body>
+  <main id="login-view" class="login-shell" hidden>
+    <section class="login-card" aria-labelledby="login-title">
+      <div class="brand-mark" aria-hidden="true">CA</div>
+      <p class="eyebrow">ESPACE PRIVÉ</p>
+      <h1 id="login-title">Administration des licences</h1>
+      <p class="muted">Connectez-vous pour gérer les essais, les postes et les échéances Copro Auto.</p>
+      <form id="login-form" class="stack">
+        <label for="password">Mot de passe administrateur</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required autofocus>
+        <p id="login-error" class="form-error" role="alert" hidden></p>
+        <button class="button primary full" type="submit">Se connecter</button>
+      </form>
+      <p class="security-note">Connexion sécurisée · session privée de 8 heures</p>
+    </section>
+  </main>
+
+  <div id="dashboard-view" class="app-shell" hidden>
+    <aside class="sidebar">
+      <div class="brand-row"><span class="brand-mark small">CA</span><div><strong>COPRO AUTO</strong><small>Administration</small></div></div>
+      <nav aria-label="Navigation principale">
+        <button class="nav-item active" data-panel="licenses"><span>▦</span> Licences</button>
+        <button class="nav-item" data-panel="activity"><span>↻</span> Activité</button>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="status-dot"></span><span>Serveur opérationnel</span>
+        <button id="logout-button" class="text-button">Se déconnecter</button>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <header class="topbar">
+        <div><p class="eyebrow">GESTION CENTRALISÉE</p><h1 id="page-title">Licences</h1></div>
+        <button id="new-license-button" class="button primary">＋ Nouvelle licence</button>
+      </header>
+
+      <div id="licenses-panel" class="panel-view">
+        <section class="metric-grid" aria-label="Résumé des licences">
+          <article class="metric"><span>Total</span><strong id="metric-total">—</strong><small>licences créées</small></article>
+          <article class="metric"><span>Valides</span><strong id="metric-valid">—</strong><small>actives et non expirées</small></article>
+          <article class="metric"><span>Essais</span><strong id="metric-trials">—</strong><small>licences d'évaluation</small></article>
+          <article class="metric"><span>Postes actifs</span><strong id="metric-devices">—</strong><small>ordinateurs connectés</small></article>
+        </section>
+
+        <section class="card table-card">
+          <div class="card-head">
+            <div><h2>Toutes les licences</h2><p class="muted">Cliquez sur une ligne pour voir les appareils et les actions.</p></div>
+            <label class="search"><span aria-hidden="true">⌕</span><input id="license-search" type="search" placeholder="Rechercher un client…"></label>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Client</th><th>Clé</th><th>Plan</th><th>Statut</th><th>Postes</th><th>Échéance</th><th></th></tr></thead>
+              <tbody id="licenses-body"></tbody>
+            </table>
+          </div>
+          <div id="licenses-empty" class="empty-state" hidden><strong>Aucune licence</strong><span>Créez votre première licence pour commencer.</span></div>
+        </section>
+      </div>
+
+      <div id="activity-panel" class="panel-view" hidden>
+        <section class="card">
+          <div class="card-head"><div><h2>Activité récente</h2><p class="muted">Journal des activations et actions administratives.</p></div></div>
+          <div id="audit-list" class="timeline"></div>
+        </section>
+      </div>
+    </section>
+  </div>
+
+  <dialog id="create-dialog" class="dialog">
+    <form id="create-form" method="dialog">
+      <div class="dialog-head"><div><p class="eyebrow">NOUVELLE LICENCE</p><h2>Créer un accès</h2></div><button id="close-create" class="icon-button" type="button" aria-label="Fermer">×</button></div>
+      <div class="form-grid">
+        <label class="wide">Client ou cabinet<input name="organization" maxlength="200" required placeholder="Ex. Cabinet Atlas"></label>
+        <label>Plan<select name="plan"><option value="individual">Individuel</option><option value="office">Bureau</option></select></label>
+        <label>Nombre de postes<input name="seats" type="number" min="1" max="100" value="2" required></label>
+        <label>Durée en jours<input name="days" type="number" min="1" max="3650" value="30" required></label>
+        <label class="check-label"><input name="trial" type="checkbox" checked> Licence d'essai</label>
+      </div>
+      <p id="create-error" class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button id="cancel-create" class="button secondary" type="button">Annuler</button><button id="create-submit" class="button primary" type="submit">Créer la licence</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="key-dialog" class="dialog compact">
+    <div class="success-icon">✓</div><h2>Licence créée</h2>
+    <p class="muted center">Copiez cette clé maintenant. Elle ne pourra pas être affichée une deuxième fois.</p>
+    <div class="key-box"><code id="created-key"></code><button id="copy-key" class="button secondary">Copier</button></div>
+    <button id="close-key" class="button primary full">J'ai sauvegardé la clé</button>
+  </dialog>
+
+  <dialog id="detail-dialog" class="dialog detail-dialog">
+    <div class="dialog-head"><div><p class="eyebrow">DÉTAIL DE LA LICENCE</p><h2 id="detail-title">—</h2></div><button id="close-detail" class="icon-button" aria-label="Fermer">×</button></div>
+    <div id="detail-content"></div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

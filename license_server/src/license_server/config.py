@@ -13,6 +13,8 @@ class Settings:
     private_key: Ed25519PrivateKey
     key_pepper: str
     lease_days: int = 30
+    admin_password_hash: str = ""
+    admin_session_secret: str = ""
 
     @classmethod
     def from_environment(cls) -> "Settings":
@@ -25,4 +27,11 @@ class Settings:
             private_key = Ed25519PrivateKey.from_private_bytes(base64.b64decode(private_key_b64))
         except (ValueError, TypeError) as exc:
             raise RuntimeError("LICENSE_SIGNING_PRIVATE_KEY est invalide.") from exc
-        return cls(database_url, private_key, pepper, int(os.environ.get("LEASE_DAYS", "30")))
+        return cls(
+            database_url,
+            private_key,
+            pepper,
+            int(os.environ.get("LEASE_DAYS", "30")),
+            os.environ.get("ADMIN_PASSWORD_HASH", ""),
+            os.environ.get("ADMIN_SESSION_SECRET", ""),
+        )

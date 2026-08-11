@@ -1,11 +1,12 @@
 # PROJECT_MAP — Plateforme d’automatisation des dossiers de copropriété
 
 Dernière mise à jour : 11 août 2026
-Statut : produit technique Windows fonctionnel, packagé et vérifié — 37 tests standards verts, 2 tests d’intégration PostgreSQL réels verts, deux smoke tests du binaire et 23 pages DOCX inspectées; un package terrain avec essai hors ligne signé de 30 jours est prêt, tandis que les validations humaines, juridiques et le déploiement commercial réel restent ouverts
+Statut : produit technique Windows fonctionnel, packagé et vérifié — 45 tests standards verts, 2 tests d’intégration PostgreSQL réels verts, deux smoke tests du binaire et 23 pages DOCX inspectées; le service de licences et son tableau de bord privé sont déployés sur Vercel/Neon, tandis que les validations humaines, terrain et juridiques restent ouvertes
 
 ## [ASSUMPTIONS & DECISIONS]
 
 - Produit desktop local destiné aux topographes individuels et aux bureaux au Maroc.
+- L'objectif immédiat est un MVP d'apprentissage et de test privé, sans vente; l'hébergement doit utiliser les offres gratuites tant qu'elles suffisent.
 - Cible officielle : Windows 10/11 x64. Windows 7 n’est pas pris en charge.
 - Tous les postes de production connus disposent d’AutoCAD, mais l’application doit fonctionner entièrement sans import CAD.
 - La saisie manuelle est le flux principal et la source de vérité éditable.
@@ -63,7 +64,7 @@ Statut : produit technique Windows fonctionnel, packagé et vérifié — 37 tes
 - **PostgreSQL 18.x** — organisations, licences, sièges, activations et événements.
 - **SQLAlchemy 2.0.51 + psycopg 3.3.4** — persistance transactionnelle.
 - **cryptography 49.0.0 / Ed25519** — signature serveur ; clé privée uniquement sur le serveur, clé publique dans le desktop.
-- Hébergement Linux géré avec HTTPS, sauvegardes PostgreSQL et secrets injectés au déploiement.
+- MVP en ligne : Vercel Hobby pour l'API FastAPI HTTPS et Neon Free PostgreSQL 18 à Francfort, avec secrets injectés au déploiement; le VPS/Caddy reste une option future.
 - Administration initiale par CLI protégée ; pas de portail SaaS ou paiement en ligne dans la première version.
 
 ### Choix de simplicité
@@ -389,13 +390,14 @@ C:\Users\yahya\Saved Games\intelligent document automation platform\
 - [x] Centraliser les décisions de permission aux frontières sensibles et implémenter la détection raisonnable du recul d’horloge.
 - [x] Implémenter plans individuel et office.
 - [x] Implémenter journalisation desktop rotative, logs serveur structurés et audit administratif en base.
-- [x] Créer tests unitaires, intégration, sécurité, UI et golden master : 37 tests standards verts et 2 tests PostgreSQL réels verts, incluant le clic réel sur un niveau nouvellement ajouté, l'ajout de sa partie, la sauvegarde robuste d'une ancienne ligne sans liste Nature, la stabilité des UUID, l'arrêt du rafraîchissement du contrôle, la confirmation `Discard`, l'essai hors ligne signé limité à 30 jours, le comportement DWG sans AutoCAD et l'import DXF autonome.
+- [x] Créer tests unitaires, intégration, sécurité, UI et golden master : 45 tests standards verts et 2 tests PostgreSQL réels verts, incluant le clic réel sur un niveau nouvellement ajouté, l'ajout de sa partie, la sauvegarde robuste d'une ancienne ligne sans liste Nature, la stabilité des UUID, l'arrêt du rafraîchissement du contrôle, la confirmation `Discard`, l'essai hors ligne signé limité à 30 jours, le comportement DWG sans AutoCAD, l'import DXF autonome, la configuration gratuite Vercel/Neon et le tableau de bord administrateur sécurisé.
 - [x] Rendre et inspecter visuellement les six sorties Yasmin 71 : 23 pages vérifiées avec LibreOffice local isolé, pagination conforme aux modèles, corrections des emplacements narratifs PV2/règlement, remplacement des valeurs intégrées aux zones de texte et mois français déterministes. Les audits structure/style/accessibilité ont été rejoués; les alertes d’accessibilité restantes (texte alternatif d’images et marquage d’en-têtes de tableaux) proviennent des modèles définitifs.
 - [ ] Obtenir la validation humaine métier et juridique des six sorties Yasmin 71; cette décision ne peut pas être automatisée et reste obligatoire avant usage officiel/commercial.
 - [x] Renforcer le service de licences avant exposition publique : tests de révocation, expiration, empreinte incorrecte, libération de siège et limiteur; `/health` vérifie `SELECT 1`; `backup.ps1` charge `.env`, écrit atomiquement et signale les erreurs; migration, sauvegarde et restauration validées sur un cluster PostgreSQL 16 jetable réel.
-- [ ] Déployer réellement le service HTTPS, PostgreSQL 18, sauvegardes et secrets. Les fichiers Docker/Caddy/PostgreSQL et la procédure sont prêts; les tests PostgreSQL locaux sont réels, mais le moteur Docker de ce poste reste indisponible. Restent le test Compose complet, le VPS, le domaine et les secrets de production.
+- [x] Déployer le MVP HTTPS sur Vercel Hobby et Neon Free : API FastAPI en production sur `https://copro-auto-license-api.vercel.app`, PostgreSQL 18 à Francfort, migration appliquée, secrets sensibles injectés, `/health` vert et parcours distant activate → verify → refresh → status → deactivate validé.
 - [x] Construire et tester le package Windows x64 `onedir`; les modes `licensed-offline` et `fresh-unlicensed` passent. Binaire corrigé vérifié : `dist-updated/CoproAuto/CoproAuto.exe`, SHA-256 `47659AD5E37B68E40B196D955423423EDFA79A1268D2269353761A97B1A7C530`.
 - [x] Préparer le package testeur `dist-updated/CoproAuto` avec une clé d'essai hors ligne signée valable jusqu'au 19 août 2026; smoke tests réussis, binaire SHA-256 `6A4B41767FDEABF3337B08D4E15CFD312B46EA9251476A7DFCA384711BAA54F6`.
+- [x] Reconstruire le package Windows avec la configuration publique du service en ligne; les smoke tests `licensed-offline` et `fresh-unlicensed` passent, binaire SHA-256 `6E7CEE01BB4EB8E7C2BEFF643E27276EE5A07E679409866A56D442A8B72E9D63` (non signé).
 - [ ] Signer le package Windows avec un certificat de signature de code avant la première distribution commerciale. `packaging/sign_release.ps1` signe, horodate et vérifie; le certificat reste à acquérir.
 - [ ] Tester sur un poste Windows propre réel, avec/sans AutoCAD et avec/sans réseau. Les deux démarrages automatisés `licensed-offline` et `fresh-unlicensed` passent sur le poste de développement via `packaging/smoke_test.ps1`.
 - [x] Rédiger manuels utilisateur, dictionnaire technique, mapping des modèles et déploiement.
@@ -456,3 +458,51 @@ C:\Users\yahya\Saved Games\intelligent document automation platform\
 - Contrat de licence, confidentialité, support et renouvellement.
 - Première licence bureau et première licence individuelle émises manuellement.
 - **Vérifiable :** vente exploitable sans portail de paiement et sans accès aux données client.
+
+## Plan approuvé à exécuter — Tableau de bord privé des licences (août 2026)
+
+### [TECH_STACK]
+
+- Python 3.13 et FastAPI 0.139.x sur le service Vercel existant; mise à jour corrective prévue de `0.139.0` vers la version stable `0.139.2`.
+- SQLAlchemy 2.0.51 et psycopg 3.3.4 conservés pour Neon PostgreSQL 18.
+- Interface HTML/CSS/JavaScript native servie par FastAPI, sans framework frontend ni chaîne de compilation supplémentaire.
+- Authentification administrateur unique par mot de passe PBKDF2-HMAC-SHA256, session HMAC courte en cookie `Secure`, `HttpOnly`, `SameSite=Strict`, jeton CSRF et limitation des tentatives en PostgreSQL.
+- Secrets supplémentaires uniquement dans Vercel : `ADMIN_PASSWORD_HASH` et `ADMIN_SESSION_SECRET`; aucun secret dans le navigateur, Git ou Neon en clair.
+
+### [SYSTEM_FLOW]
+
+1. L'administrateur ouvre `/admin` et voit l'écran de connexion.
+2. Le serveur vérifie le mot de passe et la limite de tentatives, puis émet une session sécurisée de huit heures.
+3. Le tableau de bord affiche les totaux et la liste des licences avec organisation, indice de clé, plan, statut, sièges, activations et échéance.
+4. La création d'une licence demande le client, le plan, les sièges, la durée et le statut d'essai; la clé brute est affichée une seule fois pour copie.
+5. L'administrateur peut renouveler, révoquer ou réactiver une licence après confirmation.
+6. La fiche d'une licence affiche ses appareils; un siège peut être libéré après confirmation.
+7. Chaque mutation est protégée par CSRF, enregistrée dans `audit_events` et immédiatement reflétée dans l'interface.
+8. La déconnexion invalide le cookie côté navigateur.
+
+### [ARCHITECTURE]
+
+- `license_server/src/license_server/admin_web.py` : routes HTML/JSON, contrôle de session et orchestration des actions administratives.
+- `license_server/src/license_server/admin_auth.py` : hachage/vérification du mot de passe, signature de session, CSRF et limiteur de connexion.
+- `license_server/src/license_server/admin_service.py` : requêtes de liste/détail et mutations réutilisant `LicenseService`.
+- `license_server/src/license_server/static/admin.html` : application visuelle unique, responsive et accessible; aucun secret ni accès direct à Neon.
+- `license_server/src/license_server/models.py` et migration idempotente : tentatives de connexion administrateur; les licences, activations et audits existants restent la source de vérité.
+- `license_server/src/license_server/app.py` : montage du module administrateur sur la même application Vercel.
+- `license_server/tests/` : tests d'authentification, CSRF, limitation, permissions, création, renouvellement, révocation, réactivation, libération de siège et absence de fuite de clé.
+
+### Journalisation
+
+- Conserver les logs structurés standards vers la sortie Vercel, collectés de façon non bloquante par la plateforme.
+- Journaliser succès/échec de connexion et mutations avec identifiants techniques, jamais le mot de passe, la clé brute, les cookies, le pepper ou la clé privée.
+- Conserver les actions métier durables dans `audit_events` au sein de la même transaction que la mutation.
+
+### [ORPHANS & PENDING]
+
+Aucun élément technique restant pour le tableau de bord. Le test terrain sur deux ordinateurs reste suivi dans le jalon global de distribution.
+
+### Jalons du tableau de bord
+
+1. **Sécurité vérifiable :** connexion correcte acceptée, mauvais mots de passe limités, cookie/CSRF valides, routes administratives refusées sans session.
+2. **Gestion vérifiable :** créer, lister, renouveler, révoquer, réactiver et libérer un siège depuis l'interface; la clé brute n'est visible qu'à la création.
+3. **Interface vérifiable :** parcours complet en français sur ordinateur et fenêtre étroite, avec états chargement/vide/erreur et confirmations destructives.
+4. **Déploiement vérifiable :** migration Neon appliquée, Preview verte, Production verte, `/health` intact et aucune erreur runtime après le smoke test.

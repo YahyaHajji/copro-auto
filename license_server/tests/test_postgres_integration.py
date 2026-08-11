@@ -44,7 +44,8 @@ def _connection_parameters(postgres_url: str, *, database: str | None = None) ->
 
 
 def _migration_sql() -> str:
-    return (Path(__file__).parents[1] / "migrations" / "0001_initial.sql").read_text(encoding="utf-8")
+    migrations = Path(__file__).parents[1] / "migrations"
+    return "\n".join(path.read_text(encoding="utf-8") for path in sorted(migrations.glob("*.sql")))
 
 
 def _reset_and_migrate(postgres_url: str) -> None:
@@ -65,7 +66,10 @@ def test_initial_migration_is_idempotent_on_real_postgresql(postgres_url) -> Non
             ).fetchall()
         }
 
-    assert tables == {"organizations", "licenses", "activations", "audit_events"}
+    assert tables == {
+        "organizations", "licenses", "activations", "audit_events", "activation_attempts",
+        "admin_login_attempts",
+    }
 
     settings = Settings(postgres_url, Ed25519PrivateKey.generate(), "postgres-test-pepper", 30)
     app = create_app(settings)

@@ -39,7 +39,22 @@ $env:PYTHONPATH = "license_server/src"
 
 La ligne privée va uniquement dans le secret `LICENSE_SIGNING_PRIVATE_KEY` du serveur. La ligne publique est injectée dans le desktop. Une perte de la clé privée empêche de signer de nouveaux leases; une fuite exige rotation et nouvelle version du desktop.
 
-## Service HTTPS
+## MVP d'apprentissage gratuit : Neon + Vercel
+
+Le chemin le plus simple pour l'essai en ligne utilise Neon Free pour PostgreSQL et Vercel Hobby pour l'API HTTPS. Vercel exécute directement l'application FastAPI depuis `license_server/app.py`. Aucun secret ni URL PostgreSQL n'est enregistré dans Git.
+
+1. Créer un projet Neon PostgreSQL 18 dans la région Frankfurt, sans Neon Auth.
+2. Appliquer `license_server/migrations/0001_initial.sql` avec l'URL directe Neon.
+3. Importer le dépôt GitHub privé dans un projet Vercel Hobby personnel et choisir `license_server` comme répertoire racine.
+4. Dans Vercel, fournir l'URL Neon avec pool de connexions comme `DATABASE_URL`, puis `LICENSE_SIGNING_PRIVATE_KEY`, `LICENSE_KEY_PEPPER`, `LEASE_DAYS=30`, `ADMIN_PASSWORD_HASH` et `ADMIN_SESSION_SECRET` pour Production et Preview. Générer le hash du mot de passe avec `copro-admin-password`; conserver le mot de passe dans un gestionnaire de mots de passe et ne jamais l'ajouter au dépôt.
+5. Vérifier que `https://<service>.vercel.app/health` répond `200 {"status":"ok"}`.
+6. Injecter l'URL Vercel et uniquement la clé publique Ed25519 dans le desktop avec `packaging/configure_license.py`, puis reconstruire le package.
+
+Vercel Hobby convient uniquement à ce MVP personnel et non commercial. Le limiteur d'activation est conservé dans PostgreSQL afin de rester commun aux instances serverless et de survivre à leurs redémarrages; seule une empreinte HMAC de l'adresse cliente est enregistrée.
+
+Pour les migrations, sauvegardes ou commandes administratives, utiliser l'URL Neon directe. Pour l'API Vercel, utiliser l'URL Neon avec pool de connexions. Les URL et clés restent uniquement dans les gestionnaires de secrets Neon/Vercel ou dans l'environnement local temporaire.
+
+## Service HTTPS sur VPS (option future)
 
 Prérequis : petit VPS Linux avec Docker, nom de domaine pointant vers le VPS et ports 80/443. L’hébergement n’est pas intrinsèquement gratuit : un niveau gratuit peut suffire aux essais, mais un domaine, la disponibilité et les sauvegardes ont généralement un coût faible.
 

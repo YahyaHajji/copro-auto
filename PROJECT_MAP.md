@@ -507,3 +507,91 @@ Aucun élément technique restant pour le tableau de bord. Le test terrain sur d
 2. **Gestion vérifiable :** créer, lister, renouveler, révoquer, réactiver et libérer un siège depuis l'interface; la clé brute n'est visible qu'à la création.
 3. **Interface vérifiable :** parcours complet en français sur ordinateur et fenêtre étroite, avec états chargement/vide/erreur et confirmations destructives.
 4. **Déploiement vérifiable :** migration Neon appliquée, Preview verte, Production verte, `/health` intact et aucune erreur runtime après le smoke test.
+
+## Plan proposé — cohérence UI/UX globale du desktop (août 2026)
+
+### [ASSUMPTIONS & DECISIONS]
+
+- La référence claire blanche approuvée devient l’autorité visuelle pour toutes les surfaces appartenant à Copro Auto.
+- Le périmètre couvre la fenêtre principale, les deux onglets, le panneau de contrôle, le dialogue de licence, les messages Qt, la comparaison DWG/DXF, les menus/calendriers/popups et tous les états interactifs.
+- Les sélecteurs de fichiers et dossiers restent natifs Windows et suivent donc le thème du système; ils ne sont pas remplacés par une implémentation personnalisée.
+- Aucun comportement métier, calcul, format JSON, génération DOCX, protocole de licence ou import CAD ne change.
+- Aucun nouveau framework, paquet d’icônes ou moteur web n’est ajouté. Les icônes nécessaires utilisent les ressources Qt/Windows existantes.
+- Le mode sombre reste une palette interne non exposée; aucun sélecteur de thème n’est ajouté dans ce lot.
+- La fenêtre doit rester exploitable à 1080 × 700 et avec les facteurs d’échelle Windows usuels, sans chevauchement ni commande inaccessible.
+
+### [TECH_STACK]
+
+- Python 3.13.12 x64 conservé.
+- PySide6 6.11.1 conservé; il s’agit de la version stable courante vérifiée en août 2026.
+- QSS global tokenisé conservé; aucune combinaison `QPalette` + QSS susceptible de produire des résultats divergents.
+- PyInstaller 6.21.0 conservé pour le package `onedir`; version stable courante vérifiée en août 2026.
+- pytest 9.1.1 et `QTest` conservés pour les régressions fonctionnelles, géométriques et d’interaction.
+
+### [SYSTEM_FLOW]
+
+1. L’application applique le thème clair avant de créer toute fenêtre.
+2. Toute fenêtre principale ou modale appartenant à Copro Auto reçoit un fond clair, un texte contrasté et, sous Windows, un chrome clair lorsque DWM le permet.
+3. L’utilisateur crée, ouvre et saisit un dossier sans changement de logique métier.
+4. Le panneau de contrôle rend succès, avertissements et erreurs avec texte, symbole et surface sémantique; les emplacements restent métier et français.
+5. À largeur réduite, l’éditeur conserve les commandes et tables sans chevauchement; le panneau de contrôle garde une largeur bornée.
+6. Le dialogue de licence montre un état lisible, une action principale claire, les actions secondaires regroupées et la désactivation isolée comme action destructive.
+7. Les messages d’erreur, avertissement, information et confirmation sont entièrement lisibles, localisés en français et conservent leurs valeurs de retour Qt.
+8. La comparaison DWG/DXF distingue manquant/différent/identique, garde la saisie manuelle par défaut et offre des actions françaises cohérentes.
+9. Les mêmes états sont rendus et vérifiés depuis le code source puis depuis le binaire packagé.
+
+### [ARCHITECTURE]
+
+- `src/copro_auto/ui/theme.py`
+  - étendre les tokens sémantiques (`danger_soft`, `warning_soft`, `success_soft`, focus);
+  - couvrir `QDialog`, `QMessageBox`, `QDialogButtonBox`, popups, calendriers, menus, vues et barres de défilement verticales/horizontales;
+  - ajouter un petit filtre d’événements Windows pour demander un chrome clair aux fenêtres top-level Copro Auto.
+- `src/copro_auto/ui/dialogs.py`
+  - centraliser information, avertissement, erreur et confirmation;
+  - traduire explicitement OK/Oui/Non/Enregistrer/Ignorer/Annuler;
+  - appliquer les rôles visuels sans changer les réponses `QMessageBox.StandardButton`.
+- `src/copro_auto/ui/license_dialog.py`
+  - structurer titre, aide, statut sémantique, champ de clé et groupes d’actions;
+  - définir libellé associé, ordre de tabulation, bouton par défaut et zone destructive séparée.
+- `src/copro_auto/ui/import_review.py`
+  - corriger le fond, les états de comparaison, la densité du tableau, l’avertissement et les boutons français;
+  - conserver exactement les choix manuels/CAD et leur application actuelle.
+- `src/copro_auto/ui/project_editor.py`
+  - remplacer les minimums de tables incompatibles par des facteurs d’étirement et minimums sûrs;
+  - garantir la séparation entre en-têtes, tables, barres de défilement et texte d’aide à 1080 × 700.
+- `src/copro_auto/ui/main_window.py`
+  - borner la largeur du panneau de contrôle et préserver la priorité de l’éditeur;
+  - utiliser les messages centralisés pour tous les flux existants.
+- `src/copro_auto/ui/validation_panel.py`
+  - rendre les trois sévérités accessibles et traduire les chemins techniques en emplacements métier.
+- `tests/test_ui.py`
+  - ajouter les états de dialogue, la localisation, les rôles sémantiques, le focus et les non-chevauchements à taille minimale.
+
+Le domaine, les services, les modèles de documents et le serveur de licences restent hors de cette modification.
+
+### Journalisation
+
+- Conserver la journalisation existante, non bloquante et sans donnée de licence brute.
+- Ajouter uniquement des logs `DEBUG` pour le mode de mise en page appliqué et les décisions de dialogue utiles au diagnostic; aucun événement de survol/focus n’est journalisé.
+
+### [ORPHANS & PENDING]
+
+- [ ] Étendre le QSS et le chrome clair à toutes les fenêtres top-level Copro Auto.
+- [ ] Centraliser et localiser les messages Qt.
+- [ ] Recomposer le dialogue de licence et ses états actif/inactif/invalide/expiré/hors ligne.
+- [ ] Recomposer la comparaison DWG/DXF et ses états identique/différent/manquant.
+- [ ] Corriger le reflow de Niveaux/Parties et le partage de largeur avec le panneau de contrôle.
+- [ ] Ajouter les états sémantiques du panneau de validation.
+- [ ] Tester clavier, focus visible, libellés associés et facteur d’échelle Windows.
+- [ ] Capturer la matrice visuelle avant/après et obtenir `final result: passed` dans `design-qa.md`.
+- [ ] Rejouer tous les tests, reconstruire le package Windows et exécuter les deux smoke tests.
+- [ ] Faire valider visuellement le package final par l’utilisateur sur son écran principal.
+
+### Jalons vérifiables
+
+1. **Fondations visuelles :** toutes les surfaces app-owned sont claires et contrastées; menus, calendriers, popups et scrollbars suivent les tokens.
+2. **Dialogues fiables :** licence et messages standards sont lisibles, français, accessibles au clavier et conservent les comportements actuels.
+3. **Flux CAD cohérent :** comparaison DWG/DXF claire, compacte, sémantique et fonctionnellement inchangée.
+4. **Reflow desktop :** Projet et Niveaux/Parties ne se chevauchent pas à 1080 × 700; les tables restent éditables et le panneau de contrôle ne prend pas l’espace de travail.
+5. **Accessibilité vérifiable :** focus, ordre de tabulation, libellés, contrastes et états non dépendants de la couleur passent les tests prévus.
+6. **Livraison vérifiée :** QA visuelle source + binaire réussie, suite pytest verte, deux smoke tests verts et `dist-updated/CoproAuto` reconstruit.

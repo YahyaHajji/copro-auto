@@ -12,7 +12,7 @@ from enum import StrEnum
 
 from copro_auto import __version__
 
-from .client import LicenseApiClient
+from .client import LicenseApiClient, LicenseApiError
 from .token_store import CachedLicense, TokenClaims, TokenStore, TokenVerifier, device_fingerprint, parse_timestamp
 
 
@@ -25,7 +25,7 @@ OFFLINE_TRIAL_PERMISSIONS = frozenset({"create", "import_cad", "generate_docx"})
 OFFLINE_TRIAL_MAX_DURATION = timedelta(days=30)
 
 PRODUCTIVE_STATES = {
-    "trial_active", "paid_active", "expiring_soon", "offline_grace", "development",
+    "trial_active", "paid_active", "expiring_soon", "development",
 }
 
 
@@ -64,7 +64,7 @@ class LicenseService:
         verifier: TokenVerifier | None,
         client: LicenseApiClient | None,
         *,
-        grace_days: int = 7,
+        grace_days: int = 2,
     ) -> None:
         self.store = store
         self.verifier = verifier
@@ -119,8 +119,12 @@ class LicenseService:
         if moment > lease_expiry + self.grace:
             return LicenseDecision(LicenseState.EXPIRED, "Connexion requise pour renouveler la licence", claims)
         if moment > lease_expiry:
-            return LicenseDecision(LicenseState.OFFLINE_GRACE, "Mode hors ligne temporaire — reconnectez-vous", claims)
-        if lease_expiry - moment <= timedelta(days=3):
+            return LicenseDecision(
+                LicenseState.OFFLINE_GRACE,
+                "Mode hors ligne en lecture seule — reconnectez-vous pour créer, importer ou générer",
+                claims,
+            )
+        if lease_expiry - moment <= timedelta(hours=6):
             return LicenseDecision(LicenseState.EXPIRING_SOON, "Licence à actualiser bientôt", claims)
         state = LicenseState.TRIAL_ACTIVE if claims.trial else LicenseState.PAID_ACTIVE
         return LicenseDecision(state, "Essai actif" if claims.trial else "Licence active", claims)
@@ -145,9 +149,40 @@ class LicenseService:
         claims = self.verifier.verify(record.token)
         if self._is_portable_offline_trial(claims):
             return self.evaluate(now=now)
-        token = self.client.refresh(claims.activation_id, record.activation_secret, device_fingerprint(), __version__)
+        try:
+            token = self.client.refresh(claims.activation_id, record.activation_secret, device_fingerprint(), __version__)
+        except LicenseApiError as exc:
+            denial = self._authoritative_denial(exc)
+            if denial is None:
+                raise
+            self.store.clear()
+            LOGGER.warning("license_cache_invalidated code=%s", exc.code)
+            return denial
         self.store.save(token, record.activation_secret)
-        return self.evaluate()
+        return self.evaluate(now=now)
+
+    def sync_status(self, *, now: datetime | None = None) -> LicenseDecision:
+        local = self.evaluate(now=now)
+        if local.state is LicenseState.DEVELOPMENT or local.claims is None:
+            return local
+        if self._is_portable_offline_trial(local.claims) or self.client is None or self.verifier is None:
+            return local
+        try:
+            return self.refresh(now=now)
+        except LicenseApiError as exc:
+            LOGGER.info("license_sync_deferred code=%s", exc.code)
+            return local
+
+    @staticmethod
+    def _authoritative_denial(error: LicenseApiError) -> LicenseDecision | None:
+        denial = {
+            "revoked": (LicenseState.REVOKED, "Cette licence a été révoquée par l’administrateur."),
+            "expired": (LicenseState.EXPIRED, "Cette licence est arrivée à expiration."),
+            "invalid_activation": (LicenseState.UNLICENSED, "Cet appareil a été libéré par l’administrateur."),
+            "device_mismatch": (LicenseState.INVALID, "Cette activation appartient à un autre appareil."),
+            "inactive": (LicenseState.INVALID, "Cette licence n’est plus active."),
+        }.get(error.code)
+        return LicenseDecision(*denial) if denial is not None else None
 
     def deactivate(self) -> None:
         record = self.store.load()

@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
+from copro_auto.licensing.client import LicenseApiError
 from copro_auto.licensing.service import (
     OFFLINE_TRIAL_ACTIVATION_PREFIX,
     OFFLINE_TRIAL_DEVICE_HASH,
@@ -26,7 +27,7 @@ def _licensing(tmp_path, now: datetime) -> tuple[LicenseService, TokenStore, Ed2
     claims = {
         "license_id": "license-1", "activation_id": "activation-1", "device_hash": device_fingerprint(),
         "plan": "individual", "trial": True, "permissions": ["create", "import_cad", "generate_docx"],
-        "issued_at": now.isoformat(), "lease_expires_at": (now + timedelta(days=30)).isoformat(),
+        "issued_at": now.isoformat(), "lease_expires_at": (now + timedelta(days=1)).isoformat(),
         "commercial_expires_at": (now + timedelta(days=180)).isoformat(), "server_time": now.isoformat(),
         "token_id": "token-1",
     }
@@ -39,17 +40,63 @@ def test_signed_lease_active_grace_and_read_only_expiry(tmp_path, monkeypatch) -
     now = datetime(2026, 7, 14, tzinfo=timezone.utc)
     service, _store, _private = _licensing(tmp_path, now)
 
-    active = service.evaluate(now=now + timedelta(days=1), update_seen=False)
-    grace = service.evaluate(now=now + timedelta(days=32), update_seen=False)
-    expired = service.evaluate(now=now + timedelta(days=38), update_seen=False)
+    active = service.evaluate(now=now + timedelta(hours=12), update_seen=False)
+    grace = service.evaluate(now=now + timedelta(hours=36), update_seen=False)
+    expired = service.evaluate(now=now + timedelta(days=4), update_seen=False)
 
     assert active.state is LicenseState.TRIAL_ACTIVE
     assert active.permits("generate_docx")
     assert grace.state is LicenseState.OFFLINE_GRACE
-    assert grace.permits("create")
+    assert not grace.permits("create")
+    assert grace.permits("open") and grace.permits("export_json")
     assert expired.state is LicenseState.EXPIRED
     assert not expired.permits("generate_docx")
     assert expired.permits("open") and expired.permits("export_json")
+
+
+class _RejectingClient:
+    def __init__(self, code: str) -> None:
+        self.code = code
+
+    def refresh(self, *_args, **_kwargs) -> str:
+        messages = {
+            "revoked": "Cette licence a été révoquée.",
+            "expired": "Cette licence est arrivée à expiration.",
+            "invalid_activation": "Activation inactive ou inconnue.",
+            "network_error": "Serveur de licence inaccessible.",
+        }
+        raise LicenseApiError(messages[self.code], self.code)
+
+
+def test_online_sync_invalidates_authoritative_revocation_or_release(tmp_path, monkeypatch) -> None:
+    monkeypatch.delenv("COPRO_AUTO_DEV_LICENSE", raising=False)
+    now = datetime(2026, 7, 14, tzinfo=timezone.utc)
+
+    for code, expected in (
+        ("revoked", LicenseState.REVOKED),
+        ("expired", LicenseState.EXPIRED),
+        ("invalid_activation", LicenseState.UNLICENSED),
+    ):
+        service, store, _private = _licensing(tmp_path / code, now)
+        service.client = _RejectingClient(code)
+
+        decision = service.sync_status(now=now + timedelta(hours=1))
+
+        assert decision.state is expected
+        assert store.load() is None
+
+
+def test_online_sync_keeps_valid_cached_lease_during_network_outage(tmp_path, monkeypatch) -> None:
+    monkeypatch.delenv("COPRO_AUTO_DEV_LICENSE", raising=False)
+    now = datetime(2026, 7, 14, tzinfo=timezone.utc)
+    service, store, _private = _licensing(tmp_path, now)
+    service.client = _RejectingClient("network_error")
+
+    decision = service.sync_status(now=now + timedelta(hours=1))
+
+    assert decision.state is LicenseState.TRIAL_ACTIVE
+    assert decision.permits("generate_docx")
+    assert store.load() is not None
 
 
 def test_clock_rollback_and_token_tampering_are_detected(tmp_path, monkeypatch) -> None:

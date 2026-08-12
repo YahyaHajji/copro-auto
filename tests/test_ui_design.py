@@ -126,3 +126,12 @@ def test_minimum_window_keeps_editor_controls_separate(monkeypatch) -> None:
     assert window.editor.parts.minimumHeight() <= 150
     assert not _global_rect(window.editor.levels).intersects(_global_rect(window.editor.part_title))
     assert not _global_rect(window.editor.parts).intersects(_global_rect(window.editor.levels_help))
+
+
+def test_main_window_schedules_online_license_checks_every_fifteen_minutes(monkeypatch) -> None:
+    monkeypatch.setenv("COPRO_AUTO_DEV_LICENSE", "1")
+    _application()
+    window = MainWindow()
+
+    assert window.license_sync_timer.isActive()
+    assert window.license_sync_timer.interval() == 15 * 60 * 1000

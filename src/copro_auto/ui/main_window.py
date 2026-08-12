@@ -3,8 +3,9 @@ from __future__ import annotations
 import logging
 from decimal import Decimal
 from pathlib import Path
+from typing import Callable
 
-from PySide6.QtCore import QTimer, Qt
+from PySide6.QtCore import QObject, QRunnable, QThreadPool, QTimer, Qt, Signal, Slot
 from PySide6.QtGui import QAction, QCloseEvent
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -25,7 +26,7 @@ from copro_auto.documents.service import DocumentGenerationService, GenerationEr
 from copro_auto.domain.calculations import calculate_shares, private_parts
 from copro_auto.domain.models import Project, ProjectIdentity
 from copro_auto.domain.validation import has_errors, validate_project
-from copro_auto.licensing.service import LicenseDecision, LicenseService
+from copro_auto.licensing.service import LicenseDecision, LicenseService, LicenseState
 from copro_auto.projects.service import ProjectService
 
 from .import_review import ImportReviewDialog
@@ -36,6 +37,27 @@ from .dialogs import critical, information, question, success, warning
 
 
 LOGGER = logging.getLogger(__name__)
+LICENSE_SYNC_INTERVAL_MS = 15 * 60 * 1000
+
+
+class _LicenseSyncSignals(QObject):
+    finished = Signal(object)
+
+
+class _LicenseSyncTask(QRunnable):
+    def __init__(self, service: LicenseService) -> None:
+        super().__init__()
+        self.service = service
+        self.signals = _LicenseSyncSignals()
+
+    @Slot()
+    def run(self) -> None:
+        try:
+            decision = self.service.sync_status()
+        except Exception:
+            LOGGER.exception("license_sync_failed")
+            decision = self.service.evaluate()
+        self.signals.finished.emit(decision)
 
 
 class MainWindow(QMainWindow):
@@ -48,6 +70,9 @@ class MainWindow(QMainWindow):
         self.document_service = DocumentGenerationService()
         self.license_service = LicenseService.from_environment()
         self.license_decision = self.license_service.evaluate()
+        self._license_syncing = False
+        self._license_sync_task: _LicenseSyncTask | None = None
+        self._license_sync_callbacks: list[Callable[[LicenseDecision], None]] = []
         self.project_path: Path | None = None
         self.dirty = False
         self._building = True
@@ -57,10 +82,15 @@ class MainWindow(QMainWindow):
         self.validation_timer.setSingleShot(True)
         self.validation_timer.setInterval(220)
         self.validation_timer.timeout.connect(self.refresh_validation)
+        self.license_sync_timer = QTimer(self)
+        self.license_sync_timer.setInterval(LICENSE_SYNC_INTERVAL_MS)
+        self.license_sync_timer.timeout.connect(self._sync_license_async)
+        self.license_sync_timer.start()
         self.editor.project_changed.connect(self._project_changed)
         self.new_project(confirm=False)
         self._apply_license(self.license_decision)
         self._building = False
+        QTimer.singleShot(0, self._sync_license_async)
 
     def _build_ui(self) -> None:
         root = QWidget()
@@ -205,7 +235,76 @@ class MainWindow(QMainWindow):
     def current_project(self) -> Project:
         return self.editor.project()
 
-    def new_project(self, _checked: bool = False, *, confirm: bool = True) -> None:
+    def _sync_license_async(self, callback: Callable[[LicenseDecision], None] | None = None) -> None:
+        if self.license_decision.state is LicenseState.DEVELOPMENT:
+            if callback is not None:
+                callback(self.license_decision)
+            return
+        if callback is not None:
+            self._license_sync_callbacks.append(callback)
+        if self._license_syncing:
+            return
+        self._license_syncing = True
+        task = _LicenseSyncTask(self.license_service)
+        task.signals.finished.connect(self._license_sync_finished)
+        self._license_sync_task = task
+        QThreadPool.globalInstance().start(task)
+
+    @Slot(object)
+    def _license_sync_finished(self, decision: LicenseDecision) -> None:
+        self._license_syncing = False
+        self._license_sync_task = None
+        self._apply_license(decision)
+        callbacks = tuple(self._license_sync_callbacks)
+        self._license_sync_callbacks.clear()
+        for callback in callbacks:
+            callback(decision)
+
+    def _with_synced_license(
+        self,
+        permission: str,
+        action: str,
+        continuation: Callable[[], None],
+    ) -> None:
+        if self.license_decision.state is LicenseState.DEVELOPMENT:
+            continuation()
+            return
+        if self.license_decision.claims is None:
+            self._license_required(action)
+            return
+        self.statusBar().showMessage("Vérification de la licence en ligne…")
+        self._sync_license_async(
+            lambda decision: self._continue_after_license_sync(decision, permission, action, continuation),
+        )
+
+    def _continue_after_license_sync(
+        self,
+        decision: LicenseDecision,
+        permission: str,
+        action: str,
+        continuation: Callable[[], None],
+    ) -> None:
+        if decision.permits(permission):
+            self.statusBar().showMessage("Licence vérifiée", 2500)
+            continuation()
+            return
+        information(
+            self,
+            "Licence non valide",
+            f"{decision.message}\n\nReconnectez-vous pour {action}.",
+        )
+        self.manage_license()
+
+    def new_project(
+        self, _checked: bool = False, *, confirm: bool = True, _license_checked: bool = False,
+    ) -> None:
+        if confirm and not _license_checked:
+            self._with_synced_license(
+                "create",
+                "créer un nouveau dossier",
+                lambda: self.new_project(confirm=True, _license_checked=True),
+            )
+            return
         if confirm and not self.license_decision.permits("create"):
             self._license_required("créer un nouveau dossier")
             return
@@ -288,7 +387,14 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(str(exc), 5000)
             return []
 
-    def import_drawing(self) -> None:
+    def import_drawing(self, _checked: bool = False, *, _license_checked: bool = False) -> None:
+        if not _license_checked:
+            self._with_synced_license(
+                "import_cad",
+                "importer un dessin",
+                lambda: self.import_drawing(_license_checked=True),
+            )
+            return
         if not self.license_decision.permits("import_cad"):
             self._license_required("importer un dessin")
             return
@@ -309,7 +415,14 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             critical(self, "Import impossible", str(exc))
 
-    def generate_documents(self) -> None:
+    def generate_documents(self, _checked: bool = False, *, _license_checked: bool = False) -> None:
+        if not _license_checked:
+            self._with_synced_license(
+                "generate_docx",
+                "générer les documents",
+                lambda: self.generate_documents(_license_checked=True),
+            )
+            return
         if not self.license_decision.permits("generate_docx"):
             self._license_required("générer les documents")
             return
@@ -361,7 +474,7 @@ class MainWindow(QMainWindow):
     def manage_license(self) -> None:
         dialog = LicenseDialog(self.license_service, self)
         dialog.exec()
-        self._apply_license(self.license_service.evaluate())
+        self._apply_license(dialog.decision)
 
     def _apply_license(self, decision: LicenseDecision) -> None:
         self.license_decision = decision

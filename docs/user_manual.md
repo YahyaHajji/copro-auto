@@ -2,7 +2,7 @@
 
 ## 1. Licence
 
-Au premier lancement commercial, cliquez sur l’état de licence en bas à gauche, saisissez la clé puis activez. Une connexion est requise pour l’activation et l’actualisation. Après activation, le poste fonctionne hors ligne pendant 30 jours, puis 7 jours de grâce. Une licence expirée ne supprime rien : ouverture et export JSON restent possibles; création, modification productive, import CAD et génération DOCX sont bloqués.
+Au premier lancement commercial, cliquez sur l’état de licence en bas à gauche, saisissez la clé puis activez. Une connexion est requise pour l’activation et l’actualisation. Le poste commercial fonctionne hors ligne pendant 24 heures après sa dernière vérification réussie. L’application contrôle automatiquement le serveur au démarrage, toutes les 15 minutes et avant création, import CAD ou génération. Une révocation ou une libération administrative bloque alors le poste. Après les 24 heures, une grâce de 2 jours conserve uniquement l’ouverture et l’export JSON; création, modification productive, import CAD et génération DOCX restent bloqués jusqu’au retour de la connexion. Les clés d’essai hors ligne portables conservent leur durée fixe de 30 jours et ne sont pas révocables à distance.
 
 ## 2. Créer ou ouvrir
 

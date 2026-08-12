@@ -1,7 +1,7 @@
 # PROJECT_MAP — Plateforme d’automatisation des dossiers de copropriété
 
 Dernière mise à jour : 12 août 2026
-Statut : produit technique Windows fonctionnel, packagé et vérifié — 51 tests standards verts, 2 tests d’intégration PostgreSQL réels verts, QA visuelle source + binaire, deux smoke tests du binaire et 23 pages DOCX inspectées; le service de licences et son tableau de bord privé sont déployés sur Vercel/Neon, tandis que les validations humaines, terrain et juridiques restent ouvertes
+Statut : produit technique Windows fonctionnel, packagé et vérifié — 54 tests standards verts, 2 tests d’intégration PostgreSQL réels verts, QA visuelle source + binaire, deux smoke tests du binaire et 23 pages DOCX inspectées; le service de licences et son tableau de bord privé sont déployés sur Vercel/Neon, tandis que les validations humaines, terrain et juridiques restent ouvertes
 
 ## [ASSUMPTIONS & DECISIONS]
 
@@ -22,7 +22,7 @@ Statut : produit technique Windows fonctionnel, packagé et vérifié — 51 tes
 - L’essai commercial standard dure 30 jours et peut être prolongé manuellement.
 - Pour le test terrain privé avant déploiement du serveur, une clé hors ligne portable signée peut activer les fonctions productives pendant 30 jours exactement. Elle est copiable et non révocable à distance, donc interdite pour une distribution commerciale.
 - Plans initiaux : individuel et bureau multi-sièges.
-- Licence hybride : activation en ligne, utilisation hors ligne pendant 30 jours, puis grâce de 7 jours.
+- Licence commerciale hybride : contrôle serveur au démarrage, toutes les 15 minutes et avant les actions productives; lease signé de 24 heures, puis grâce de lecture seule de 2 jours. Les clés d’essai hors ligne portables restent valables 30 jours et non révocables à distance.
 - Après expiration, les projets restent consultables et exportables ; création et génération/régénération DOCX sont bloquées.
 - L’auteur souhaite posséder personnellement le produit. Un accord écrit avec le bureau sur le code, le workflow et les modèles est obligatoire avant toute vente.
 
@@ -80,8 +80,9 @@ Statut : produit technique Windows fonctionnel, packagé et vérifié — 51 tes
 1. **Démarrer et vérifier la licence**
    - Premier lancement : saisie d’une clé d’essai ou commerciale.
    - Envoi HTTPS limité à la clé, version de l’application et empreinte pseudonyme de l’appareil.
-   - Le serveur retourne un jeton Ed25519 signé valable 30 jours.
-   - Hors ligne, le client vérifie localement le jeton ; une grâce de 7 jours couvre une panne réseau.
+   - Le serveur retourne un jeton Ed25519 signé valable 24 heures.
+   - Hors ligne, le client vérifie localement le jeton; après 24 heures, une grâce de 2 jours conserve uniquement la consultation et l’export JSON.
+   - En ligne, le statut est synchronisé au démarrage, toutes les 15 minutes et avant création, import CAD ou génération; une révocation ou libération administrative invalide immédiatement le cache local.
    - Les états sont explicites : `TRIAL_ACTIVE`, `PAID_ACTIVE`, `EXPIRING_SOON`, `OFFLINE_GRACE`, `EXPIRED`, `REVOKED`, `DEVICE_LIMIT_REACHED`.
 
 2. **Créer ou ouvrir un projet**
@@ -386,11 +387,12 @@ C:\Users\yahya\Saved Games\intelligent document automation platform\
 - [x] Implémenter les quatre routes : activate, refresh, deactivate, status.
 - [x] Implémenter administration CLI : créer, renouveler, révoquer, libérer une activation.
 - [x] Implémenter client licence, stockage local et états UI.
-- [x] Implémenter lease 30 jours, grâce 7 jours et expiration non destructive.
+- [x] Synchroniser automatiquement les révocations/libérations administratives au démarrage, toutes les 15 minutes et avant les actions productives, sans supprimer un lease valide lors d’une panne réseau.
+- [x] Implémenter pour les licences commerciales un lease de 24 heures, une grâce de lecture seule de 2 jours et une expiration non destructive; conserver séparément l’essai portable hors ligne de 30 jours.
 - [x] Centraliser les décisions de permission aux frontières sensibles et implémenter la détection raisonnable du recul d’horloge.
 - [x] Implémenter plans individuel et office.
 - [x] Implémenter journalisation desktop rotative, logs serveur structurés et audit administratif en base.
-- [x] Créer tests unitaires, intégration, sécurité, UI et golden master : 51 tests standards verts et 2 tests PostgreSQL réels verts, incluant le clic réel sur un niveau nouvellement ajouté, l'ajout de sa partie, la sauvegarde robuste d'une ancienne ligne sans liste Nature, la stabilité des UUID, l'arrêt du rafraîchissement du contrôle, la confirmation `Discard`, la cohérence globale du thème clair et de tous les dialogues, l'essai hors ligne signé limité à 30 jours, le comportement DWG sans AutoCAD, l'import DXF autonome, la configuration gratuite Vercel/Neon et le tableau de bord administrateur sécurisé.
+- [x] Créer tests unitaires, intégration, sécurité, UI et golden master : 54 tests standards verts et 2 tests PostgreSQL réels verts, incluant le clic réel sur un niveau nouvellement ajouté, l'ajout de sa partie, la sauvegarde robuste d'une ancienne ligne sans liste Nature, la stabilité des UUID, l'arrêt du rafraîchissement du contrôle, la confirmation `Discard`, la cohérence globale du thème clair et de tous les dialogues, l'essai hors ligne signé limité à 30 jours, la synchronisation des révocations/libérations avec maintien du cache pendant une panne réseau, le comportement DWG sans AutoCAD, l'import DXF autonome, la configuration gratuite Vercel/Neon et le tableau de bord administrateur sécurisé.
 - [x] Rendre et inspecter visuellement les six sorties Yasmin 71 : 23 pages vérifiées avec LibreOffice local isolé, pagination conforme aux modèles, corrections des emplacements narratifs PV2/règlement, remplacement des valeurs intégrées aux zones de texte et mois français déterministes. Les audits structure/style/accessibilité ont été rejoués; les alertes d’accessibilité restantes (texte alternatif d’images et marquage d’en-têtes de tableaux) proviennent des modèles définitifs.
 - [ ] Obtenir la validation humaine métier et juridique des six sorties Yasmin 71; cette décision ne peut pas être automatisée et reste obligatoire avant usage officiel/commercial.
 - [x] Renforcer le service de licences avant exposition publique : tests de révocation, expiration, empreinte incorrecte, libération de siège et limiteur; `/health` vérifie `SELECT 1`; `backup.ps1` charge `.env`, écrit atomiquement et signale les erreurs; migration, sauvegarde et restauration validées sur un cluster PostgreSQL 16 jetable réel.
@@ -400,6 +402,7 @@ C:\Users\yahya\Saved Games\intelligent document automation platform\
 - [x] Reconstruire le package Windows avec la configuration publique du service en ligne; les smoke tests `licensed-offline` et `fresh-unlicensed` passent, binaire SHA-256 `6E7CEE01BB4EB8E7C2BEFF643E27276EE5A07E679409866A56D442A8B72E9D63` (non signé).
 - [x] Reconstruire `dist-updated/CoproAuto` avec le thème clair validé et les états lisibles du bouton de licence; les smoke tests `licensed-offline` et `fresh-unlicensed` passent, binaire SHA-256 `76E61FC864242B2657198529BB758F9D564CE5326F3CC54E097132561DFE1134` (non signé).
 - [x] Reconstruire `dist-updated/CoproAuto` après la cohérence UI/UX globale : licence, import DWG/DXF, validation, reflow à 1080 × 700 et toutes les catégories de `QMessageBox` vérifiés; QA visuelle source + binaire et deux smoke tests réussis, SHA-256 `D39DBE935DFEE2B34B0099CCF327CF2891C29870FDC7A42D11E32B06F3F27F5A` (non signé). L'ancien package est conservé dans `dist-updated/CoproAuto-pre-ui-ux-20260812`.
+- [x] Construire le candidat Windows avec synchronisation administrative en ligne; les smoke tests `licensed-offline` et `fresh-unlicensed` passent, SHA-256 `2E075E07BBE9292F72C0B0C066556ACCE7E8C33966180C709F3C911F479CD35E` (non signé). Le candidat reste dans `dist-updated/CoproAuto-license-sync-candidate` jusqu'à la fermeture de l'ancien exécutable qui verrouille `dist-updated/CoproAuto`.
 - [ ] Signer le package Windows avec un certificat de signature de code avant la première distribution commerciale. `packaging/sign_release.ps1` signe, horodate et vérifie; le certificat reste à acquérir.
 - [ ] Tester sur un poste Windows propre réel, avec/sans AutoCAD et avec/sans réseau. Les deux démarrages automatisés `licensed-offline` et `fresh-unlicensed` passent sur le poste de développement via `packaging/smoke_test.ps1`.
 - [x] Rédiger manuels utilisateur, dictionnaire technique, mapping des modèles et déploiement.

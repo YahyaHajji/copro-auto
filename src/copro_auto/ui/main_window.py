@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from copro_auto.cad_import.service import import_cad
+from copro_auto.cad_import.service import import_cad, project_is_empty
 from copro_auto.documents.service import DocumentGenerationService, GenerationError
 from copro_auto.domain.calculations import calculate_shares, private_parts
 from copro_auto.domain.models import Project, ProjectIdentity
@@ -29,8 +29,8 @@ from copro_auto.domain.validation import has_errors, validate_project
 from copro_auto.licensing.service import LicenseDecision, LicenseService, LicenseState
 from copro_auto.projects.service import ProjectService
 
-from .import_review import ImportReviewDialog
 from .license_dialog import LicenseDialog
+from .cad_import_wizard import CadImportWizard
 from .project_editor import ProjectEditor
 from .validation_panel import ValidationPanel
 from .dialogs import critical, information, question, success, warning
@@ -60,6 +60,28 @@ class _LicenseSyncTask(QRunnable):
         self.signals.finished.emit(decision)
 
 
+class _CadImportSignals(QObject):
+    finished = Signal(object)
+    failed = Signal(str)
+
+
+class _CadImportTask(QRunnable):
+    def __init__(self, source: Path) -> None:
+        super().__init__()
+        self.source = source
+        self.signals = _CadImportSignals()
+
+    @Slot()
+    def run(self) -> None:
+        try:
+            result = import_cad(self.source)
+        except Exception as exc:
+            LOGGER.exception("cad_import_failed extension=%s", self.source.suffix.casefold())
+            self.signals.failed.emit(str(exc))
+            return
+        self.signals.finished.emit(result)
+
+
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
@@ -73,6 +95,7 @@ class MainWindow(QMainWindow):
         self._license_syncing = False
         self._license_sync_task: _LicenseSyncTask | None = None
         self._license_sync_callbacks: list[Callable[[LicenseDecision], None]] = []
+        self._cad_import_task: _CadImportTask | None = None
         self.project_path: Path | None = None
         self.dirty = False
         self._building = True
@@ -142,14 +165,14 @@ class MainWindow(QMainWindow):
         self.new_button = self._sidebar_button("＋  Nouveau dossier")
         self.open_button = self._sidebar_button("↗  Ouvrir un projet")
         self.save_button = self._sidebar_button("↓  Enregistrer")
-        self.import_button = self._sidebar_button("◇  Vérifier par DWG/DXF")
-        for button in (self.new_button, self.open_button, self.save_button, self.import_button):
+        self.cad_button = self._sidebar_button("◇  Importer DWG/DXF")
+        for button in (self.new_button, self.open_button, self.save_button, self.cad_button):
             layout.addWidget(button)
         layout.addSpacing(20)
         workflow = QLabel("MÉTHODE")
         workflow.setProperty("role", "sidebarSection")
         layout.addWidget(workflow)
-        for number, text in (("01", "Saisie manuelle"), ("02", "Contrôles"), ("03", "Aperçu"), ("04", "Six documents")):
+        for number, text in (("01", "Saisie manuelle"), ("02", "Contrôles"), ("03", "Aperçu"), ("04", "Cinq documents")):
             item = QLabel(f"{number}   {text}")
             item.setProperty("role", "brandSub")
             layout.addWidget(item)
@@ -190,11 +213,11 @@ class MainWindow(QMainWindow):
         metrics.setSpacing(24)
         self.surface_metric = self._metric(metrics, "0 m²", "Surface privative")
         self.share_metric = self._metric(metrics, "—", "Tantièmes")
-        self.document_metric = self._metric(metrics, "6", "Documents")
+        self.document_metric = self._metric(metrics, "5", "Documents")
         layout.addLayout(metrics)
         layout.addSpacing(12)
         self.validate_button = QPushButton("Contrôler")
-        self.generate_button = QPushButton("Générer les 6 DOCX")
+        self.generate_button = QPushButton("Générer les 5 DOCX")
         self.generate_button.setProperty("variant", "primary")
         layout.addWidget(self.validate_button)
         layout.addWidget(self.generate_button)
@@ -217,11 +240,12 @@ class MainWindow(QMainWindow):
         self.action_open = QAction("Ouvrir", self, shortcut="Ctrl+O", triggered=self.open_project)
         self.action_save = QAction("Enregistrer", self, shortcut="Ctrl+S", triggered=self.save_project)
         self.action_save_as = QAction("Enregistrer sous", self, shortcut="Ctrl+Shift+S", triggered=self.save_project_as)
-        self.addActions((self.action_new, self.action_open, self.action_save, self.action_save_as))
+        self.action_cad = QAction("Importer ou vérifier DWG/DXF", self, shortcut="Ctrl+D", triggered=self.import_cad_drawing)
+        self.addActions((self.action_new, self.action_open, self.action_save, self.action_save_as, self.action_cad))
         self.new_button.clicked.connect(self.new_project)
         self.open_button.clicked.connect(self.open_project)
         self.save_button.clicked.connect(self.save_project)
-        self.import_button.clicked.connect(self.import_drawing)
+        self.cad_button.clicked.connect(self.import_cad_drawing)
         self.license_button.clicked.connect(self.manage_license)
         self.validate_button.clicked.connect(self.refresh_validation)
         self.generate_button.clicked.connect(self.generate_documents)
@@ -234,6 +258,60 @@ class MainWindow(QMainWindow):
 
     def current_project(self) -> Project:
         return self.editor.project()
+
+    def import_cad_drawing(self, _checked: bool = False, *, _license_checked: bool = False) -> None:
+        if not _license_checked:
+            self._with_synced_license(
+                "create",
+                "importer ou vérifier un dessin DWG/DXF",
+                lambda: self.import_cad_drawing(_license_checked=True),
+            )
+            return
+        if self._cad_import_task is not None:
+            return
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            "Importer ou vérifier un dessin",
+            "",
+            "Dessins AutoCAD (*.dwg *.dxf)",
+        )
+        if not filename:
+            return
+        self.cad_button.setEnabled(False)
+        self.statusBar().showMessage("Analyse locale du dessin…")
+        task = _CadImportTask(Path(filename))
+        task.signals.finished.connect(self._cad_import_finished)
+        task.signals.failed.connect(self._cad_import_failed)
+        self._cad_import_task = task
+        QThreadPool.globalInstance().start(task)
+
+    @Slot(object)
+    def _cad_import_finished(self, draft) -> None:
+        self._cad_import_task = None
+        self.cad_button.setEnabled(self.license_decision.permits("create"))
+        LOGGER.info(
+            "cad_import_ready extension=%s levels=%d parts=%d warnings=%d",
+            draft.source.suffix.casefold(), len(draft.levels), draft.part_count, len(draft.warnings),
+        )
+        dialog = CadImportWizard(self.current_project(), draft, self)
+        if dialog.exec() and dialog.reviewed_project is not None:
+            self._building = True
+            self.editor.set_project(dialog.reviewed_project)
+            self._building = False
+            self.dirty = True
+            self.refresh_validation()
+            self.statusBar().showMessage("Brouillon CAD appliqué — complétez et contrôlez le dossier", 6000)
+            LOGGER.info("cad_review_applied levels=%d parts=%d", len(draft.levels), draft.part_count)
+        else:
+            self.statusBar().showMessage("Import CAD annulé — dossier inchangé", 4000)
+            LOGGER.info("cad_review_cancelled")
+
+    @Slot(str)
+    def _cad_import_failed(self, message: str) -> None:
+        self._cad_import_task = None
+        self.cad_button.setEnabled(self.license_decision.permits("create"))
+        self.statusBar().showMessage("Import CAD impossible", 4000)
+        critical(self, "Import CAD impossible", message)
 
     def _sync_license_async(self, callback: Callable[[LicenseDecision], None] | None = None) -> None:
         if self.license_decision.state is LicenseState.DEVELOPMENT:
@@ -372,6 +450,11 @@ class MainWindow(QMainWindow):
             self.project_title.setText(project.identity.property_name or "Nouveau dossier")
             subtitle = project.identity.land_title or "Titre foncier non renseigné"
             self.project_subtitle.setText(f"Titre foncier · {subtitle}")
+            empty = project_is_empty(project)
+            self.cad_button.setText("◇  Importer DWG/DXF" if empty else "◇  Vérifier DWG/DXF")
+            self.cad_button.setToolTip(
+                "Créer un brouillon depuis un dessin" if empty else "Comparer ce dossier avec un dessin"
+            )
             total_surface = sum((part.surfaces.cadastral_total for part in private_parts(project)), Decimal("0"))
             self.surface_metric.setText(f"{total_surface} m²")
             if not has_errors(issues):
@@ -386,34 +469,6 @@ class MainWindow(QMainWindow):
             self.share_metric.setText("Valeur invalide")
             self.statusBar().showMessage(str(exc), 5000)
             return []
-
-    def import_drawing(self, _checked: bool = False, *, _license_checked: bool = False) -> None:
-        if not _license_checked:
-            self._with_synced_license(
-                "import_cad",
-                "importer un dessin",
-                lambda: self.import_drawing(_license_checked=True),
-            )
-            return
-        if not self.license_decision.permits("import_cad"):
-            self._license_required("importer un dessin")
-            return
-        filename, _ = QFileDialog.getOpenFileName(self, "Sélectionner un dessin", "", "Dessin AutoCAD (*.dwg *.dxf)")
-        if not filename:
-            return
-        try:
-            project = self.current_project()
-            result = import_cad(filename)
-            dialog = ImportReviewDialog(project, result, self)
-            if dialog.exec():
-                self._building = True
-                self.editor.set_project(project)
-                self._building = False
-                self.dirty = True
-                self.refresh_validation()
-                self.statusBar().showMessage("Choix du dessin appliqués et tracés", 4000)
-        except Exception as exc:
-            critical(self, "Import impossible", str(exc))
 
     def generate_documents(self, _checked: bool = False, *, _license_checked: bool = False) -> None:
         if not _license_checked:
@@ -436,15 +491,15 @@ class MainWindow(QMainWindow):
         if has_errors(issues):
             warning(self, "Dossier incomplet", "Corrigez les erreurs affichées avant la génération.")
             return
-        directory = QFileDialog.getExistingDirectory(self, "Dossier de sortie des six documents")
+        directory = QFileDialog.getExistingDirectory(self, "Dossier de sortie des cinq documents")
         if not directory:
             return
         try:
             outputs = self.document_service.generate(project, directory)
-            self.statusBar().showMessage("Six documents générés avec succès", 6000)
+            self.statusBar().showMessage("Cinq documents générés avec succès", 6000)
             success(
                 self, "Dossier généré",
-                "Les six documents ont été créés :\n\n" + "\n".join(path.name for path in outputs),
+                "Les cinq documents ont été créés :\n\n" + "\n".join(path.name for path in outputs),
             )
             LOGGER.info("documents_generated count=%d", len(outputs))
         except GenerationError as exc:
@@ -481,7 +536,7 @@ class MainWindow(QMainWindow):
         self.license_button.setText(f"●  {decision.message}")
         productive = decision.permits("create")
         self.new_button.setEnabled(productive)
-        self.import_button.setEnabled(decision.permits("import_cad"))
+        self.cad_button.setEnabled(productive and self._cad_import_task is None)
         self.editor.setEnabled(productive)
         self.refresh_validation()
 

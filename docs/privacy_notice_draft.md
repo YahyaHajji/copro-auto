@@ -4,7 +4,7 @@
 
 ## Responsable et périmètre
 
-Le responsable du traitement est **Yahya [identité/statut/adresse/email]**. Cette notice couvre l'activation, la sécurité et l'administration commerciale des licences Copro Auto. Les projets de copropriété, plans CAD et six documents Word restent sur le poste du client et ne sont pas transmis au serveur de licence.
+Le responsable du traitement est **Yahya [identité/statut/adresse/email]**. Cette notice couvre l'activation, la sécurité et l'administration commerciale des licences Copro Auto. Les projets de copropriété, plans CAD et cinq documents Word restent sur le poste du client et ne sont pas transmis au serveur de licence.
 
 ## Données techniques traitées
 

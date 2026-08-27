@@ -1,0 +1,13 @@
+COPRO AUTO — VERSION DE TEST TOPOGRAPHE
+
+1. Copiez le fichier ZIP sur l’ordinateur puis extrayez-le complètement.
+2. Ouvrez le dossier CoproAuto. Ne déplacez pas CoproAuto.exe hors de ce dossier.
+3. Lancez CoproAuto.exe.
+4. Cliquez sur l’état de licence en bas à gauche, saisissez la clé fournie, puis activez-la avec une connexion Internet.
+5. Conservez le fichier projet JSON avec les cinq documents DOCX générés.
+
+Cette version permet la saisie manuelle et la revue d’un import DWG/DXF. Les valeurs extraites du dessin restent un brouillon à confirmer avant génération.
+
+Le programme Windows n’est pas encore signé par un certificat commercial. Windows peut donc afficher un avertissement d’éditeur inconnu. Vérifiez l’empreinte SHA-256 communiquée avec le package avant de l’exécuter.
+
+En cas de problème, notez les étapes réalisées et conservez le fichier JSON concerné. Ne transmettez pas de document client sans retirer les données personnelles inutiles.

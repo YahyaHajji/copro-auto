@@ -5,9 +5,8 @@ import shutil
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
+from xml.etree import ElementTree
 from zipfile import BadZipFile, ZipFile
-
-from docx import Document
 
 from copro_auto import __version__
 from copro_auto.domain.models import GenerationRecord, Project
@@ -17,8 +16,7 @@ from .docx_renderer import render_document, resource_root, template_hashes
 
 
 OUTPUTS = {
-    "pv_division_1": "PV_Division_1.docx",
-    "pv_division_2": "PV_Division_2.docx",
+    "pv_division": "PV_Division.docx",
     "reglement": "Reglement_Copropriete.docx",
     "tableau_a": "Tableau_A.docx",
     "tableau_b": "Tableau_B.docx",
@@ -30,10 +28,26 @@ class GenerationError(RuntimeError):
     pass
 
 
-def _critical_text(path: Path) -> str:
-    document = Document(path)
-    chunks = [paragraph.text for paragraph in document.paragraphs]
-    chunks.extend(cell.text for table in document.tables for row in table.rows for cell in row.cells)
+WORD_TEXT_TAG = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t"
+WORD_PARAGRAPH_TAG = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p"
+SUSPICIOUS_ENCODING_MARKERS = ("?", "\ufffd", "Ã", "Â")
+
+
+def _package_text(path: Path) -> str:
+    """Return text from every Word XML part, including headers and text boxes."""
+    chunks: list[str] = []
+    with ZipFile(path) as archive:
+        for member in sorted(archive.namelist()):
+            if not member.startswith("word/") or not member.endswith(".xml"):
+                continue
+            try:
+                root = ElementTree.fromstring(archive.read(member))
+            except ElementTree.ParseError:
+                continue
+            for paragraph in root.iter(WORD_PARAGRAPH_TAG):
+                text = "".join(node.text or "" for node in paragraph.iter(WORD_TEXT_TAG))
+                if text:
+                    chunks.append(text)
     return "\n".join(chunks)
 
 
@@ -44,7 +58,13 @@ def _verify(path: Path, project: Project, kind: str) -> None:
                 raise GenerationError(f"Document Word incomplet : {path.name}")
     except (OSError, BadZipFile) as exc:
         raise GenerationError(f"Document Word invalide : {path.name}") from exc
-    text = _critical_text(path)
+    text = _package_text(path)
+    marker = next((value for value in SUSPICIOUS_ENCODING_MARKERS if value in text), None)
+    if marker is not None:
+        raise GenerationError(
+            f"{path.name} contient un caractère suspect d’encodage ({marker!r}). "
+            "Vérifiez les accents français dans les données et le modèle."
+        )
     required = [project.identity.land_title]
     if kind != "tableau_recapitulatif":
         required.append(project.identity.property_name)

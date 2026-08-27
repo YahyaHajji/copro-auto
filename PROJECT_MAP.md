@@ -1,6 +1,6 @@
 # PROJECT_MAP — Plateforme d’automatisation des dossiers de copropriété
 
-Dernière mise à jour : 12 août 2026
+Dernière mise à jour : 24 août 2026
 Statut : produit technique Windows fonctionnel, packagé et vérifié — 54 tests standards verts, 2 tests d’intégration PostgreSQL réels verts, QA visuelle source + binaire, deux smoke tests du binaire et 23 pages DOCX inspectées; le service de licences et son tableau de bord privé sont déployés sur Vercel/Neon, tandis que les validations humaines, terrain et juridiques restent ouvertes
 
 ## [ASSUMPTIONS & DECISIONS]
@@ -599,3 +599,409 @@ Le domaine, les services, les modèles de documents et le serveur de licences re
 4. **Reflow desktop :** Projet et Niveaux/Parties ne se chevauchent pas à 1080 × 700; les tables restent éditables et le panneau de contrôle ne prend pas l’espace de travail.
 5. **Accessibilité vérifiable :** focus, ordre de tabulation, libellés, contrastes et états non dépendants de la couleur passent les tests prévus.
 6. **Livraison vérifiée :** QA visuelle source + binaire réussie, suite pytest verte, deux smoke tests verts et `dist-updated/CoproAuto` reconstruit.
+
+## Plan proposé — cinq documents métier entièrement dynamiques (août 2026)
+
+Ce plan est approuvé uniquement après confirmation explicite de l'utilisateur. Il ne déclenche ni implémentation, ni reconstruction du binaire, ni commit, ni push, ni déploiement. Le travail restera local jusqu'à une décision ultérieure distincte.
+
+### [ASSUMPTIONS & DECISIONS]
+
+- Les six documents fournis restent les références métier. Les deux références PV sont assemblées en un seul document livré, ce qui produit désormais cinq sorties : `PV_Division.docx`, `Reglement_Copropriete.docx`, `Tableau_A.docx`, `Tableau_B.docx` et `Tableau_Recapitulatif.docx`.
+- `PV_Division.docx` contient d'abord PV Division 1, puis un saut de page/section contrôlé, puis PV Division 2. Les originaux restent intacts.
+- Un seul bloc client est saisi par dossier et alimente à la fois PV Division et le Règlement de copropriété. Il contient : nom complet, CNIE, adresse/domicile, qualité et date d'expiration de la CNIE.
+- La phrase client est générée de façon déterministe sous une forme neutre : `M./Mme {nom}, CNIE n° {cnie}, demeurant à {adresse}, agissant en qualité de {qualité}, carte valable jusqu'au {date}.` Aucun texte juridique libre n'est inventé.
+- Le dossier reçoit un champ heure, saisi au format `HH:mm`. La date et l'heure produisent toute la phrase française du PV, y compris le jour de la semaine, le jour, le mois, l'année et l'heure en lettres. À minute zéro, la phrase se termine par exemple par `à dix heures`; sinon les minutes sont ajoutées en lettres.
+- `Conservation foncière`, `Préfecture` et `Commune` sont trois données indépendantes. Le défaut actuel est confirmé : le mapping global de `Meknès` utilise `identity.commune or identity.prefecture`, ce qui peut remplacer la préfecture par la commune. Il sera supprimé au profit de marqueurs explicites et ciblés.
+- Le nom du topographe remplace aussi la forme longue statique `Mr DAANOUNI ABDELAAZIZ`; le système ne dépend plus d'une liste fragile de noms littéraux historiques.
+- Les quatre limites `Nord-Est`, `Nord-Ouest`, `Sud-Est` et `Sud-Ouest` deviennent des champs explicites de l'interface et alimentent le Règlement de copropriété.
+- La consistance générale et la hauteur totale alimentent la description de l'immeuble. La section `DESCRIPTION DE L’IMMEUBLE ET DE LA DIVISION PAR NIVEAU ET PAR PARTIE` est entièrement produite à partir des niveaux et parties réellement saisis.
+- Aucun niveau `Terrasse`, paragraphe, titre ou tableau correspondant n'est généré si ce niveau n'existe pas dans le projet. À l'inverse, toute terrasse réellement saisie est générée normalement.
+- Les cotes début/fin peuvent être négatives ou positives. Elles sont toujours écrites avec un signe et deux décimales séparées par une virgule : `-2,20`, `+0,40`, `+3,80`. Zéro s'écrit `+0,00`. Les surfaces conservent leur format métier actuel.
+- Les libellés visibles deviennent `Hauteur` et `Surface`. Les noms internes existants `interior_height` et `inside_title` restent inchangés afin de préserver les calculs et de limiter la migration.
+- Dans Tableau A et Tableau B, les parties privatives reçoivent une séquence globale `Nom propriété-1`, `Nom propriété-2`, etc. Les parties communes restent sans suffixe. Tableau B suit exactement l'ordre des parties privatives de Tableau A.
+- Le texte placé sous le logo de Tableau A et Tableau B reçoit la valeur de Préfecture, conformément au besoin exprimé. Dans le Tableau récapitulatif, les occurrences d'`Al Ismaïlia` reçoivent aussi la Préfecture.
+- Le format JSON passe de `schema_version: 1` à `schema_version: 2`. Les dossiers v1 restent ouvrables : les nouveaux champs sont initialisés proprement, puis sauvegardés en v2 sans modifier les niveaux, parties, UUID ni calculs existants.
+- Les données métier restent locales. Aucun changement du serveur de licences, de Neon, de Vercel ou du tableau de bord administrateur n'appartient à ce lot.
+
+### [TECH_STACK]
+
+- Python 3.13.12 x64, PySide6 6.11.1, python-docx 1.2.0, lxml 6.1.1, PyInstaller 6.21.0 et pytest 9.1.1 sont conservés.
+- Aucun nouveau paquet n'est nécessaire : le français de la date/heure, les cotes, la migration JSON et l'assemblage DOCX sont déterministes et peuvent être réalisés avec la bibliothèque standard et les dépendances déjà verrouillées.
+- Python 3.13.14 est disponible comme correctif plus récent de la branche 3.13, mais la mise à niveau du runtime est séparée de cette modification fonctionnelle afin de réduire le risque de régression et de garder un diff ciblé.
+
+### [SYSTEM_FLOW]
+
+1. L'utilisateur saisit l'identité foncière, la conservation foncière, la date et l'heure, le topographe, le client, les quatre limites, les niveaux et les parties.
+2. L'éditeur construit un `Project` v2 sans perdre les UUID ni les valeurs d'un dossier v1 ouvert.
+3. La validation signale les nouveaux champs requis avec des emplacements métier lisibles avant toute génération.
+4. Le service prend un seul instantané immuable du projet validé et calcule une seule fois les agrégats et les tantièmes.
+5. Les formateurs déterministes produisent les textes partagés : identité ciblée, client, date/heure française, cotes signées à deux décimales et descriptions des niveaux.
+6. Le moteur remplit le modèle PV combiné, le Règlement et les trois tableaux à partir de ce même instantané. Les blocs de niveaux sont clonés uniquement pour les niveaux présents.
+7. Les cinq fichiers sont d'abord écrits dans un dossier temporaire, contrôlés structurellement et croisés, puis déplacés atomiquement vers le dossier choisi. Une erreur ne laisse pas une livraison partielle.
+8. L'application affiche et documente partout cinq documents, sans reconstruction du package distribué tant que la validation locale n'est pas terminée.
+
+### [ARCHITECTURE]
+
+- `src/copro_auto/domain/models.py`
+  - ajouter `project_time` et `land_registry_office` à l'identité du dossier;
+  - ajouter un petit objet métier `ClientInformation` regroupant nom, CNIE, adresse, qualité et expiration;
+  - conserver `boundaries` avec quatre clés canoniques (`northeast`, `northwest`, `southeast`, `southwest`) pour éviter une hiérarchie inutile.
+- `src/copro_auto/infrastructure/json_repository.py`
+  - écrire le schéma v2;
+  - migrer explicitement v1 → v2 avec valeurs vides/defaults sûrs;
+  - conserver la lecture stricte des types, des décimales et des UUID.
+- `src/copro_auto/domain/validation.py`
+  - valider les données nécessaires aux cinq documents : conservation, heure, client et quatre limites;
+  - continuer d'accepter les cotes négatives et imposer seulement la cohérence `cote fin > cote début` lorsque les deux existent.
+- `src/copro_auto/ui/project_editor.py`
+  - ajouter les champs dans des groupes lisibles `Identification`, `Client` et `Limites` au sein de la zone défilante existante;
+  - utiliser un `QTimeEdit` en `HH:mm`;
+  - lire et réécrire tous les nouveaux champs sans supprimer `boundaries` lors de `project()`;
+  - remplacer uniquement les libellés `Hauteur libre` par `Hauteur` et `Dans titre` par `Surface`.
+- `src/copro_auto/documents/mappings.py`
+  - supprimer les remplacements globaux ambigus fondés sur des valeurs exemples telles que `Meknès`;
+  - ajouter des formateurs purs et testables pour date/heure française, client et cote signée à deux décimales;
+  - construire une carte de marqueurs uniques, un marqueur par champ et par emplacement sémantique lorsque nécessaire.
+- `src/copro_auto/documents/docx_renderer.py`
+  - remplir les cellules, paragraphes, en-têtes, pieds de page et zones de texte par marqueurs explicites;
+  - remplacer les quatre emplacements de niveaux codés en dur par un bloc prototype cloné pour chaque niveau réel, puis supprimer le prototype et tous les résidus inutilisés;
+  - produire la description dynamique de l'immeuble, la consistance, les limites, le client et les parties dans le Règlement;
+  - appliquer la numérotation `-N` uniquement aux parties privatives de Tableau A/B, à partir d'une séquence partagée.
+- `src/copro_auto/application/document_service.py` et `src/copro_auto/ui/main_window.py`
+  - remplacer les deux sorties PV par `PV_Division.docx`;
+  - mettre à jour les compteurs, boutons, dialogues, messages et contrôles transactionnels de six vers cinq.
+- `resources/templates/`
+  - garder les six originaux inchangés;
+  - préparer un modèle runtime autoritaire `pv_division.docx` composé de PV1 puis PV2, avec séparation de section/page préservant la mise en page;
+  - introduire des marqueurs explicites et des blocs prototypes dans les copies runtime seulement;
+  - ne plus packager deux modèles PV concurrents comme deux sorties distinctes.
+- `tests/fixtures/` et `tests/`
+  - ajouter un dossier de régression dérivé de `T.117564.59.json`;
+  - couvrir la migration v1/v2, la persistance UI, les champs requis, les cinq noms de sortie, l'ordre PV1→PV2 et l'atomicité;
+  - vérifier Préfecture ≠ Commune ≠ Conservation, topographe, client, date/heure, consistance et quatre limites dans chaque document concerné;
+  - vérifier `-2,20`, `+0,40`, deux décimales, absence de `+-`, et absence de bloc Terrasse lorsque le niveau n'existe pas;
+  - vérifier la séquence privée Tableau A/B et l'absence de suffixe sur les lignes communes;
+  - extraire les valeurs critiques du corps, des tableaux, des en-têtes/pieds et des zones de texte OOXML.
+- `docs/data_dictionary.md`, `docs/template_mapping.md`, `docs/user_manual.md` et `docs/field_validation_protocol.md`
+  - documenter les nouveaux champs, le schéma v2, les cinq sorties et la matrice exacte champ → document → emplacement;
+  - supprimer les instructions opérationnelles qui parlent encore de six fichiers lorsque le nombre de sorties est concerné.
+
+### Journalisation
+
+- Conserver `QueueHandler`/`QueueListener`, la rotation et l'absence de blocage de l'interface.
+- Journaliser la version de schéma lue/migrée, les cinq types de documents, le nombre de niveaux/parties rendus, les empreintes des modèles et les résultats des contrôles.
+- Ne jamais journaliser le nom du client, la CNIE, l'adresse, le texte juridique complet ni le contenu des documents.
+
+### [ORPHANS & PENDING]
+
+- [x] Obtenir l'approbation explicite de ce plan avant toute modification de code ou de modèle.
+- [x] Figer la phrase client exacte avec la formulation neutre proposée; toute modification ultérieure doit rester un changement de modèle, pas une concaténation dispersée.
+- [x] Créer et valider le jeu de régression basé sur `T.117564.59.json` et les six documents annotés fournis.
+- [x] Implémenter et tester la migration JSON v1 → v2.
+- [x] Implémenter les nouveaux champs UI et la persistance complète, y compris les quatre limites déjà présentes dans le domaine.
+- [x] Corriger les mappings Préfecture/Commune/Conservation, topographe, date/heure, client, consistance et limites.
+- [x] Remplacer les niveaux statiques par des blocs dynamiques sans Terrasse fantôme.
+- [x] Assembler le modèle PV unique et réduire la transaction à cinq sorties.
+- [x] Appliquer et vérifier les suffixes privés cohérents dans Tableau A/B.
+- [x] Mettre à jour les tests et la documentation métier.
+- [x] Rendre avec Microsoft Word et inspecter visuellement à la résolution native les 19 pages des cinq sorties, y compris polices, tailles, emplacements, accents français, tableaux, sauts de page et pieds de page.
+- [ ] Faire valider les cinq documents par le topographe avant toute reconstruction, distribution ou mise en production.
+- [x] Conserver hors périmètre : serveur de licences, dashboard, Neon, Vercel, package `dist-updated`, commit, push et déploiement.
+
+### Jalons vérifiables
+
+1. **Référence de régression figée** — le JSON fourni ouvre sans perte et les défauts actuels sont reproduits par des tests rouges ciblés : Préfecture incorrecte, champs statiques, Terrasse fantôme et six sorties.
+2. **Données v2 et interface complètes** — création, sauvegarde et réouverture conservent heure, conservation, client et quatre limites; un dossier v1 reste ouvrable; les libellés `Hauteur` et `Surface` sont visibles.
+3. **Texte déterministe correct** — les mappings ciblés distinguent Préfecture/Commune/Conservation, remplacent le topographe, génèrent la phrase date/heure et formatent chaque cote avec signe, virgule et deux décimales.
+4. **PV et Règlement réellement dynamiques** — client, limites, consistance et description proviennent du projet; le nombre et l'ordre des blocs correspondent exactement aux niveaux présents; aucune Terrasse fantôme ne subsiste.
+5. **Cinq sorties cohérentes** — le PV unique respecte l'ordre PV1 puis PV2, Tableau A/B partagent la même séquence privée, les lignes communes restent sans suffixe et la génération transactionnelle livre exactement cinq fichiers.
+6. **Validation locale complète** — suite automatisée verte, contrôles OOXML verts, rendu visuel des cinq sorties inspecté page par page et aucune régression sur calculs, licences, import CAD ou sauvegarde.
+7. **Visa métier avant livraison** — le topographe approuve les cinq documents générés à partir du dossier réel; seulement après ce visa pourra être planifiée séparément une reconstruction ou un déploiement.
+
+### État d’exécution locale — 13 août 2026
+
+- Schéma v2, migration v1, nouveaux champs UI, cinq sorties, PV fusionné, mappings ciblés, niveaux dynamiques, suffixes privés et documentation sont implémentés.
+- Le formulaire Projet impose désormais explicitement la surface claire au contenu et au viewport défilant; `QTimeEdit` partage les mêmes états clair, focus et sélection que les autres champs, sans dépendre de la palette sombre de Windows.
+- Un même indice cadastral peut désormais être réutilisé sur plusieurs niveaux (par exemple `1A` au S/SOL et au Rez-de-chaussée). Seule la répétition du même indice dans un même niveau reste une erreur bloquante.
+- Les tableaux conservent désormais la `Consistance` courte exactement saisie (`Appartement`, `Garage`, etc.). Les paragraphes narratifs PV/Règlement combinent systématiquement cette consistance, la surface calculée, la description détaillée comme complément et les observations, au lieu de remplacer la consistance par la description.
+- Pour la version de test topographe d’août 2026, l’entrée DWG/DXF est retirée de la navigation et du package à la demande de l’utilisateur. La saisie manuelle et les cinq documents restent le périmètre de validation; les adaptateurs CAD demeurent dans le dépôt pour une réactivation ultérieure.
+- Le package topographe local est construit avec une configuration de ressources isolée : la clé publique d’essai hors ligne est embarquée sans modifier la configuration en ligne du dépôt, et aucun secret de signature n’entre dans le dossier distribué. Les smoke tests `licensed-offline` et `fresh-unlicensed` passent sur le binaire allégé. Le ZIP final `CoproAuto-Topographe-Test-2026-08-13.zip` contient 293 entrées, pèse 59 148 289 octets et porte le SHA-256 `A11CE60E27637DD6F7640328E8426C6D7AD90C186B078DA1D80BA4704AEB878C`.
+- La suite complète passe : `71 passed, 2 skipped`; les deux tests sautés exigent la base PostgreSQL réelle et sont sans rapport avec ce lot documentaire.
+- Les cinq fichiers QA sont générés depuis `T.117564.59.json` enrichi des nouveaux champs dans `work/qa-t117564-fidelity-20260813-v5/`. Les contrôles OOXML, métier, style, numérotation, caractères français et mise à jour des champs passent.
+- Les 19 pages ont été rendues individuellement par Microsoft Word puis inspectées à la résolution native : PV 2 pages, Règlement 11 pages, Tableau A 2 pages, Tableau B 2 pages et Tableau récapitulatif 2 pages. Les polices, tailles, emplacements, tableaux et accents sont préservés; aucun `?` de conversion, niveau fantôme, page blanche finale ni numéro de page tronqué ne subsiste.
+- Le seul gate restant est le visa métier du topographe. Aucun binaire, commit, push ou déploiement n’a été produit dans ce lot local.
+
+## Plan proposé — import CAD vers dossier prérempli avec revue obligatoire (août 2026)
+
+Ce plan traduit les trois décisions approuvées le 24 août 2026. Son implémentation locale a été autorisée et exécutée le même jour. Aucun packaging ni déploiement n’a été déclenché.
+
+### [ASSUMPTIONS & DECISIONS]
+
+- Deux parcours coexistent : `Créer par saisie manuelle` reste entièrement fonctionnel; `Importer depuis DWG/DXF` produit un brouillon prérempli soumis à revue.
+- Sur un dossier existant, l’import devient une comparaison manuelle ↔ CAD et ne remplace jamais une valeur sans choix explicite.
+- Le nombre de plans, niveaux et tableaux de contenances est dynamique : 2, 3, 4 ou davantage. Aucun nom ni nombre de niveaux n’est codé en dur.
+- Le premier périmètre extrait l’identité disponible, les niveaux, les cotes, la hauteur, les lignes de chaque tableau, l’indice, la nature, les surfaces, le surplomb, la consistance et les observations.
+- Les libellés de pièces peuvent proposer une `Description détaillée`, mais cette proposition reste non sélectionnée ou marquée incertaine tant que son rattachement géométrique à une partie n’est pas suffisamment fiable.
+- Les valeurs absentes du dessin restent vides et clairement signalées. Le système n’invente ni information administrative, ni donnée client, ni limite, ni texte juridique.
+- Le topographe complète seulement les champs factuels manquants. Le texte juridique continue d’être produit exclusivement par les modèles DOCX déterministes déjà validés.
+- La version initiale lit les surfaces écrites dans les tableaux. Elle ne recalcule pas de surface légale à partir des polylignes, hachures ou pièces dessinées.
+- Un DXF est lu directement. Un DWG est converti localement avec AutoCAD Core Console lorsqu’il est disponible; sinon l’utilisateur reçoit une instruction claire pour exporter en DXF R2018.
+- Aucun convertisseur tiers, OCR, LLM, service cloud ou appel réseau n’est ajouté.
+- Les plans sources ne sont jamais modifiés. L’application conserve dans le JSON les décisions et une empreinte du fichier, pas une copie silencieuse du DWG/DXF.
+- Le fichier de référence `Les Planches.dxf` contient environ 3 039 entités dans Model Space, dont 546 `TEXT`, 4 `MTEXT`, 1 226 `LINE` et 667 `LWPOLYLINE`. Ses tableaux sont dessinés avec du texte et des lignes, pas avec des entités `TABLE` natives.
+- Le même fichier contient quatre tableaux/niveaux exploitables, mais l’algorithme sera validé avec des fixtures à 2, 3 et 5 niveaux afin de prouver que le compte est dynamique.
+- Le DXF de référence déclare `ANSI_1252` tout en contenant des octets UTF-8. La lecture doit préserver `Propriété`, `Préfecture` et `Meknès`; tout caractère `�` ou mojibake est une erreur d’import, jamais une valeur acceptable.
+- La conservation foncière, le topographe, la date/heure, le client et les quatre limites ne sont pas présents de manière fiable dans le plan fourni; ils restent des champs manuels requis avant génération.
+- Le serveur de licences, le dashboard, Neon, Vercel et les modèles DOCX sont hors périmètre de ce lot.
+
+### [TECH_STACK]
+
+- Conserver Python 3.13.12, PySide6 6.11.1, ezdxf 1.4.4, `Decimal`, `hashlib`, `subprocess`, `pathlib`, pytest 9.1.1 et PyInstaller 6.21.0 tels qu’ils sont verrouillés dans le dépôt.
+- Aucun nouveau paquet n’est nécessaire. L’inspection de versions en ligne a été bloquée par la politique réseau de la session; aucune mise à niveau non vérifiée n’est introduite dans ce changement fonctionnel.
+- Réactiver `ezdxf` et ses dépendances requises dans le package seulement après validation locale du flux. Ne pas réintroduire tous les sous-modules optionnels de dessin/scientifiques qui avaient fortement ralenti le build.
+- Conserver AutoCAD Core Console comme adaptateur DWG facultatif et DXF R2018 comme format interne d’analyse.
+- Conserver le modèle local JSON atomique. Une migration de schéma v2 vers v3 est autorisée uniquement pour persister proprement provenance, confiance et décisions CAD; les dossiers v1/v2 restent ouvrables.
+
+### [SYSTEM_FLOW]
+
+1. **Choisir le mode de création**
+   - `Saisie manuelle` ouvre le formulaire actuel sans dépendance CAD.
+   - `Importer DWG/DXF` ouvre le sélecteur de dessin sur un nouveau dossier.
+   - `Vérifier avec DWG/DXF` reste disponible sur un dossier déjà rempli.
+2. **Préparer la source**
+   - DXF : lecture read-only directe.
+   - DWG : conversion dans un dossier temporaire unique via AutoCAD Core Console, puis suppression garantie du DXF temporaire.
+   - Calculer taille, extension et SHA-256; ne jamais journaliser le texte métier du plan.
+3. **Charger sans corruption**
+   - Détecter le codage réel avant de faire confiance à `$DWGCODEPAGE`.
+   - Refuser ou avertir sur tout texte contenant `�`, `Ã`, `Â` ou une perte d’accent détectable.
+   - Aplatir les textes utiles des blocs/INSERT sans modifier les coordonnées du dessin.
+4. **Détecter les feuilles et tableaux**
+   - Rechercher toutes les variantes normalisées de `Tableau des Contenances`.
+   - Construire une région autour de chaque ancre; déduire la grille des lignes horizontales/verticales et associer les textes aux cellules par coordonnées.
+   - Si une grille est incomplète, utiliser un repli spatial par baselines et colonnes; marquer alors la confiance comme moyenne ou faible.
+5. **Interpréter les données**
+   - Extraire les champs d’identité disponibles sans doublons contradictoires.
+   - Associer chaque tableau au titre de plan et à la phrase de cotes la plus proche.
+   - Normaliser accents, espaces, décimales, unités, indices fragmentés (`4-4` + `a`), nature privative/commune et synonymes de colonnes.
+   - Produire un nombre dynamique de brouillons de niveaux et de parties dans leur ordre spatial/altimétrique.
+6. **Attribuer confiance et provenance**
+   - `Élevée` : valeur contenue dans une cellule attendue et cohérente avec la grille/totaux.
+   - `Moyenne` : valeur reconstruite par proximité spatiale ou normalisation non ambiguë.
+   - `Faible` : rattachement possible mais ambigu, notamment les pièces et descriptions.
+   - Chaque candidat conserve fichier, empreinte, handles/coordonnées et texte source localement.
+7. **Présenter la revue**
+   - Résumé : niveaux détectés, parties, erreurs, avertissements et champs administratifs absents.
+   - Onglets dynamiques par niveau, jamais quatre panneaux fixes.
+   - Chaque valeur affiche `Manuel`, `CAD`, `État`, `Confiance`, `Source` et `Valeur retenue`.
+   - Permettre de corriger, ajouter, supprimer, fusionner, renommer et réordonner niveaux/parties avant application.
+8. **Appliquer atomiquement**
+   - Nouveau dossier : les valeurs CAD confirmées construisent le projet en une opération; Annuler ne change rien.
+   - Dossier existant : la saisie manuelle reste sélectionnée par défaut; seules les décisions explicites sont appliquées.
+   - Les UUID existants sont préservés lorsque des entités existantes sont conservées; les nouvelles entités reçoivent de nouveaux UUID stables.
+9. **Compléter le dossier**
+   - Le formulaire normal s’ouvre avec les données approuvées.
+   - Le panneau de contrôle identifie les champs factuels encore manquants : conservation, topographe, date/heure, client, limites ou toute valeur CAD incertaine non acceptée.
+10. **Valider et générer**
+   - Les mêmes validations et calculs manuels restent l’autorité.
+   - La génération des cinq DOCX n’est possible qu’après disparition des erreurs bloquantes.
+   - Aucun chemin direct CAD → DOCX ne contourne la revue ou la validation.
+
+### [ARCHITECTURE]
+
+- `src/copro_auto/cad_import/dxf_loader.py`
+  - chargement read-only, détection/réparation contrôlée du codage, expansion des textes de blocs et inventaire d’entités;
+  - aucun parsing métier dans ce module.
+- `src/copro_auto/cad_import/table_detector.py`
+  - détection dynamique des ancres et régions de tableaux;
+  - reconstruction de grilles et placement texte → cellule;
+  - repli spatial explicite avec baisse de confiance.
+- `src/copro_auto/cad_import/dxf_parser.py`
+  - orchestration identité + niveaux + parties à partir des cellules et textes normalisés;
+  - abandon des regex globales comme mécanisme principal, tout en les conservant comme repli ciblé.
+- `src/copro_auto/cad_import/models.py`
+  - modèles temporaires `CadCandidate`, `CadLevelDraft`, `CadPartDraft`, `CadImportDraft`, `CadConfidence`;
+  - aucune mutation de `Project` pendant l’extraction.
+- `src/copro_auto/cad_import/service.py`
+  - conversion DWG, empreinte, import, comparaison, application atomique et nettoyage;
+  - correspondance par chemin métier stable, pas par numéro de ligne UI.
+- `src/copro_auto/domain/models.py`
+  - étendre minimalement `FieldDecision` avec confiance et référence de source, ou introduire un enregistrement d’import compact;
+  - migrer JSON uniquement si nécessaire pour la traçabilité approuvée.
+- `src/copro_auto/ui/cad_import_wizard.py`
+  - assistant unique pour import nouveau et comparaison existante;
+  - pages `Résumé`, `Projet`, `Niveaux et parties`, `Champs manquants`;
+  - édition et sélection accessibles au clavier, sans fenêtre gigantesque ni tableau horizontal illisible.
+- `src/copro_auto/ui/main_window.py`
+  - restaurer l’entrée CAD avec deux contextes : `Importer depuis DWG/DXF` pour un dossier vide et `Vérifier avec DWG/DXF` pour un dossier existant;
+  - lancer l’analyse dans `QThreadPool` afin de ne jamais bloquer l’interface.
+- `src/copro_auto/ui/project_editor.py`
+  - réutiliser `set_project()` après application atomique; aucun second formulaire métier concurrent.
+- `packaging/copro_auto.spec`
+  - réinclure uniquement les modules ezdxf requis par le parseur réel;
+  - conserver `onedir`, les ressources DOCX et les tests de démarrage avec/sans licence.
+- `tests/fixtures/cad/`
+  - fixtures synthétiques sans données client : tableaux explosés à 2, 3 et 5 niveaux, accents UTF-8/codepage contradictoire, indices fragmentés, grille partielle et valeurs manquantes;
+  - le plan externe fourni reste intact et n’entre ni dans Git ni dans le package sans autorisation distincte.
+
+### Journalisation
+
+- Réutiliser `QueueHandler`/`QueueListener` et la rotation existante.
+- Journaliser seulement : extension, octets, préfixe SHA-256, durée, nombres d’entités/tables/niveaux/parties, répartitions de confiance, avertissements codifiés et résultat de revue.
+- Ne jamais journaliser propriété, titre foncier, textes du dessin, client, CNIE, adresse, limites ou descriptions.
+- Les exceptions techniques conservent leur traceback dans le journal local, tandis que l’interface affiche une correction française exploitable.
+
+### [ORPHANS & PENDING]
+
+- [x] Approuver le périmètre : extraction complète disponible, niveaux dynamiques, pièces seulement suggérées, DWG via AutoCAD et revue sans écrasement.
+- [x] Inspecter `Les Planches.dwg/.dxf` et confirmer que les tableaux de référence sont des primitives texte/ligne.
+- [x] Obtenir l’approbation explicite de ce plan architectural avant toute implémentation.
+- [x] Créer les modèles de brouillon CAD et les fixtures synthétiques 2/3/5 niveaux.
+- [x] Corriger et tester le chargement des accents lorsque codepage déclaré et octets réels divergent.
+- [x] Implémenter la détection dynamique de tous les tableaux et la reconstruction géométrique de leurs cellules.
+- [x] Parser identité, niveaux, cotes, hauteur, parties, surfaces, consistances et observations avec confiance/provenance.
+- [x] Implémenter le rapprochement des pièces comme suggestions non fiables par défaut.
+- [x] Remplacer le dialogue limité à quatre champs par l’assistant de revue dynamique.
+- [x] Restaurer les actions CAD dans la fenêtre principale sans bloquer l’interface.
+- [x] Garantir application atomique, annulation sans mutation, préservation des UUID et migration JSON rétrocompatible.
+- [x] Tester DWG avec AutoCAD présent/absent et nettoyage systématique des fichiers temporaires.
+- [x] Vérifier le parcours complet : import → revue → complétion manuelle → contrôle → cinq DOCX.
+- [x] Rejouer la suite complète et l’inspection UI locale; ne reconstruire aucun package avant validation utilisateur distincte.
+- [x] Recueillir au moins deux autres DXF de structures différentes avant de déclarer l’extracteur généraliste.
+- [x] Corriger l’extraction séparée de la préfecture et de la commune observée dans `EX 1` et `EX 2`.
+- [x] Signaler et représenter sans fausse précision les niveaux contenant plus de deux cotes.
+- [x] Fusionner les segments de bordure des tableaux, associer titres/cotes hors bordure et ordonner les feuilles horizontales comme dans `EX 3`.
+- [x] Adapter les colonnes à en-têtes fusionnés et abaisser la confiance lorsque des colonnes ou consistances restent incomplètes.
+- [x] Rejouer les quatre DXF terrain, le parcours cinq DOCX et toute la suite automatisée après correction.
+- [ ] Faire valider les résultats d’extraction et les cinq documents par le topographe.
+
+### État d’exécution locale — 24 août 2026
+
+- Le bouton `Appliquer les choix` de la revue CAD est connecté directement à l’application atomique du brouillon; un test UI reproduit le clic réel et vérifie la fermeture acceptée ainsi que la création du projet relu.
+- Les plans terrain `Les Planches`, `EX 1`, `EX 2` et `EX 3` passent le parcours revue → application → JSON → validation → cinq DOCX. Les résultats respectifs sont 4/15, 5/18, 4/21 et 8/44 niveaux/parties; `EX 3` conserve toutes ses consistances et l’ordre Sous-sol → Terrasse.
+- Les consistances multiligne de `EX 3` restent attachées à leur indice : les continuations telles que `cage d’ascenseur` ne migrent plus vers la partie suivante.
+- `EX 1` extrait désormais `Meknes`/`Ait Ouallal`, `EX 2` extrait `Meknès`/`Ait Ouallal`, et les libellés génériques `Parties Communes` ne peuvent plus devenir une fausse commune.
+- Les phrases à plusieurs cotes utilisent leurs bornes extérieures, laissent la hauteur à confirmer et affichent un avertissement dédié avec confiance moyenne.
+- Le DXF `Les Planches.dxf` est lu sans corruption d’accents et produit dynamiquement 4 niveaux, 15 parties et les indices composés attendus. Les cotes, surfaces dans le titre, surplombs, consistances et observations sont reconstruits depuis les grilles texte/ligne.
+- Les fixtures synthétiques prouvent les comptes dynamiques à 2, 3 et 5 niveaux, la réparation codepage/UTF-8, les indices fragmentés et le repli spatial lorsque la grille est incomplète.
+- L’assistant de revue comporte Résumé, Projet, Niveaux et parties et Champs manquants. Les suggestions de pièces restent de confiance faible et désactivées par défaut.
+- L’application du brouillon construit une copie atomique. Annuler conserve le projet byte-for-byte; un dossier existant garde ses valeurs et UUID tant que le remplacement explicite n’est pas sélectionné.
+- Le schéma JSON v3 conserve confiance, source, handles et empreinte tout en ouvrant les dossiers v1/v2.
+- Le flux DXF → revue → complétion → validation → cinq DOCX est couvert automatiquement. Suite complète : `89 passed, 2 skipped`; les deux sauts exigent PostgreSQL réel et sont hors de ce lot.
+- AutoCAD Core Console 2019 est détecté, mais le DWG de référence dépasse le délai même avec profil temporaire isolé. Le chemin DWG est donc best-effort : arrêt à 90 secondes, nettoyage intégral et instruction DXF R2018. Le DXF direct reste le chemin terrain vérifié.
+- Le package PyInstaller sait de nouveau inclure `ezdxf`/`numpy`, mais aucun binaire n’a été reconstruit et aucun code n’a été déployé conformément à la consigne utilisateur.
+
+### Jalons vérifiables
+
+1. **Chargeur fiable** — le DXF de référence restitue les accents exacts, inventorie les entités et ne modifie pas la source; DWG sans AutoCAD explique l’export DXF requis.
+2. **Tables dynamiques** — les fixtures à 2, 3 et 5 niveaux produisent exactement 2, 3 et 5 brouillons, sans nom ni compte codé en dur; les cellules et indices fragmentés sont reconstruits.
+3. **Brouillon métier complet** — identité disponible, niveaux, cotes, hauteurs, parties, surfaces, consistances et observations sont typés avec provenance et confiance; aucun champ absent n’est inventé.
+4. **Revue sûre** — nouveau dossier et dossier existant partagent le même assistant; Annuler laisse le projet byte-for-byte inchangé et aucune valeur manuelle n’est écrasée implicitement.
+5. **Intégration métier** — après approbation, le formulaire normal reçoit les valeurs choisies, affiche les champs administratifs manquants et conserve calculs, tantièmes et validation actuels.
+6. **Parcours complet** — un projet extrait, complété manuellement et validé génère exactement les cinq DOCX sans différence de mise en forme par rapport au flux manuel.
+7. **Préparation terrain** — au moins trois projets de structures différentes passent les contrôles; les résultats sont approuvés par le topographe avant packaging ou déploiement.
+
+## Plan proposé — cotes et hauteurs multiples par niveau (août 2026)
+
+**Profondeur : standard.** Le changement est visuellement limité à trois colonnes, mais il traverse le modèle métier, le schéma JSON, l'import CAD, la validation et les cinq documents. La rétrocompatibilité des dossiers déjà enregistrés justifie un plan standard. **État : `milestone-complete-awaiting-approval` — jalon 3 vérifié localement le 27 août 2026; aucun packaging, commit, push ou déploiement n'a été effectué.**
+
+### Portée confirmée
+
+- Un niveau accepte une ou plusieurs cotes de début, une ou plusieurs cotes de fin et zéro, une ou plusieurs hauteurs.
+- Le cas terrain de référence doit conserver exactement : début `+0,20`, fins `+3,10` et `+5,70`, hauteurs `2,90` et `5,50`.
+- La saisie manuelle et la revue CAD affichent les listes sans en masquer une valeur.
+- Les cinq DOCX utilisent le singulier ou le pluriel français approprié et formatent chaque nombre avec signe, virgule et deux décimales.
+- Les projets JSON v1, v2 et v3 restent ouvrables sans perte; le nouveau format devient le schéma v4.
+- Les valeurs existantes à un seul nombre restent visuellement et textuellement inchangées.
+
+### Exclusions
+
+- Aucun changement du serveur de licences, dashboard, Neon ou Vercel.
+- Aucun calcul géométrique des zones correspondant à chaque cote; l'application conserve les valeurs déclarées dans le plan ou confirmées par le topographe.
+- Aucun package, commit, push ou déploiement avant une autorisation distincte après validation locale.
+
+### Règles métier et UX
+
+- `BR-ELEV-01` — l'ordre des valeurs suit l'ordre explicite de la phrase CAD ou l'ordre saisi par l'utilisateur; les doublons exacts sont éliminés sans tri destructif.
+- `BR-ELEV-02` — dans l'éditeur, le séparateur de liste est le point-virgule afin de ne pas confondre la virgule décimale : `+3,10 ; +5,70`. Le point et la virgule restent acceptés comme séparateurs décimaux.
+- `BR-ELEV-03` — toutes les cotes de fin doivent être strictement supérieures à toutes les cotes de début du même niveau; toutes les hauteurs doivent être positives.
+- `BR-ELEV-04` — l'import CAD calcule les hauteurs seulement lorsque l'association est déterministe : un début vers plusieurs fins, plusieurs débuts vers une fin, ou listes de même longueur associées par ordre. Sinon les hauteurs restent à confirmer et un avertissement est affiché.
+- `BR-ELEV-05` — une phrase structurée comme `De la cote +0.20m aux cotes +3.10m et +5.70m` n'est plus considérée ambiguë; une suite de nombres sans marqueurs linguistiques fiables reste de confiance moyenne et exige une revue.
+- `BR-ELEV-06` — pour les hauteurs CAD, la différence déterministe entre cotes est la proposition primaire (`3,10 - 0,20 = 2,90`; `5,70 - 0,20 = 5,50`). Une étiquette de hauteur spatialement rattachée à la coupe confirme la valeur; concordance calcul + étiquette donne une confiance élevée, calcul seul une confiance moyenne, et une étiquette numérique isolée n'est jamais appliquée automatiquement.
+- `UX-ELEV-01` — les colonnes deviennent `Cotes début`, `Cotes fin` et `Hauteurs`; chaque cellule montre toutes les valeurs sur une seule ligne séparées par ` ; ` et possède un exemple/infobulle.
+- `UX-ELEV-02` — la revue CAD reprend exactement le même format; modifier une cellule puis appliquer les choix conserve chaque valeur dans le formulaire principal et le JSON.
+- `DOC-ELEV-01` — les variantes déterministes sont : `de la cote … à la cote …`, `de la cote … aux cotes …`, `des cotes … à la cote …` et `des cotes … aux cotes …`.
+- `DOC-ELEV-02` — une hauteur produit `d’une hauteur intérieure de …`; plusieurs produisent `de hauteurs intérieures de … et …`.
+
+### Architecture et migration
+
+- `domain/models.py` : remplacer les trois scalaires de `Level` par des tuples ordonnés de `Decimal` (`start_elevations`, `end_elevations`, `interior_heights`) afin d'éviter la duplication de source de vérité.
+- `projects/json_repository.py` : écrire les trois listes dans le schéma v4; convertir automatiquement chaque scalaire v1-v3 en liste vide ou à un élément lors du chargement.
+- `ui/project_editor.py` : ajouter des fonctions uniques de parsing/formatage des listes décimales et les réutiliser pour lecture et écriture des trois colonnes.
+- `cad_import/models.py`, `dxf_parser.py` et `service.py` : conserver séparément les nombres situés après les marqueurs `cote`/`cotes`, dériver les hauteurs déterministes et trier les niveaux par leur première cote de début.
+- `cad_import_wizard.py` : transporter et éditer les trois listes sans conversion scalaire intermédiaire.
+- `domain/validation.py` : valider présence du début, ordre vertical et positivité; les associations non déterministes importées restent un avertissement, jamais une valeur inventée.
+- `documents/mappings.py` et `docx_renderer.py` : centraliser le formatage des listes, la coordination française et les quatre variantes singulier/pluriel pour les paragraphes et en-têtes de tableaux.
+- Documentation : actualiser dictionnaire de données, manuel, protocole terrain et mapping des modèles sans modifier les textes juridiques statiques.
+
+Les données restent locales. Les journaux peuvent contenir uniquement le nombre de valeurs et le code d'avertissement; ils ne doivent pas enregistrer les cotes ou le texte métier du dessin.
+
+### Acceptation et vérification
+
+- `AC-ELEV-01` — saisir `0,20`, `3,10 ; 5,70` et `2,90 ; 5,50`, enregistrer, rouvrir et retrouver les cinq nombres dans le même ordre.
+- `AC-ELEV-02` — ouvrir un dossier v3 à valeurs scalaires, l'enregistrer en v4 puis le rouvrir sans changement visible ni perte de parties.
+- `AC-ELEV-03` — importer la fixture contenant la phrase terrain et obtenir début `[0.20]`, fins `[3.10, 5.70]`, hauteurs `[2.90, 5.50]`, sans avertissement de cotes ambiguës.
+- `AC-ELEV-03B` — sur EX 3, les textes de coupe `2.90` et `5.50` concordent avec les différences calculées et élèvent leur confiance; une fixture contenant un nombre isolé identique hors de la coupe ne doit pas être retenue comme hauteur.
+- `AC-ELEV-03C` — sur EX 1, le Sous-sol conserve début `[-2.20]`, fins `[-0.20, 0.40]` et hauteurs `[2.00, 2.60]`; le Rez-de-chaussée conserve débuts `[0.00, 0.60]`, fin `[3.60]` et hauteurs `[3.60, 3.00]`. Les étiquettes de coupe correspondantes confirment ces calculs sans que les répétitions sur plusieurs feuilles créent des doublons.
+- `AC-ELEV-04` — une fin inférieure/égale à un début ou une hauteur nulle/négative bloque la génération avec un message français rattaché au niveau.
+- `AC-ELEV-05` — PV Division, Règlement et les titres de niveaux des tableaux contiennent `de la cote +0,20 m aux cotes +3,10 m et +5,70 m`; le narratif contient `de hauteurs intérieures de 2,90 m et 5,50 m`.
+- `AC-ELEV-06` — les dossiers à une seule cote de début/fin/hauteur produisent les mêmes textes qu'avant.
+- `AC-ELEV-07` — toute la suite pytest passe; le parcours EX 3 import → revue → JSON → contrôle → cinq DOCX passe; les cinq DOCX sont inspectés en OOXML et visuellement page par page.
+
+### Jalons avec gates d'approbation
+
+1. **Données v4 et éditeur manuel** — migration rétrocompatible, saisie des listes et validations passent `AC-ELEV-01/02/04/06`. Gate : revue du formulaire et d'un JSON migré.
+2. **Import et revue CAD fidèles** — la phrase terrain conserve les deux fins et les deux hauteurs, sans fausse ambiguïté; `AC-ELEV-03` passe. Gate : revue de l'écran CAD avec EX 3.
+3. **Cinq documents cohérents** — grammaire, signes et décimales passent `AC-ELEV-05/06`; suite complète et QA documentaire passent `AC-ELEV-07`. Gate : visa local avant toute reconstruction ou distribution.
+
+### Résultat du jalon 1 — données v4 et éditeur manuel
+
+- `Level` conserve désormais trois tuples ordonnés de `Decimal`; les doublons exacts sont supprimés sans tri et les vues scalaires temporaires maintiennent la compatibilité des composants non encore migrés.
+- Le dépôt JSON écrit le schéma v4 et convertit automatiquement les valeurs scalaires des schémas v1, v2 et v3 en listes, sans modifier les UUID des niveaux et parties.
+- L’éditeur manuel affiche `Cotes début`, `Cotes fin` et `Hauteurs`, accepte le séparateur ` ; `, les virgules ou points décimaux, puis restitue signes et deux décimales.
+- La validation bloque une liste de débuts vide, toute fin qui ne dépasse pas tous les débuts et toute hauteur nulle ou négative; le panneau rattache le message au niveau concerné.
+- Verdicts : `AC-ELEV-01` réussi; `AC-ELEV-02` réussi; `AC-ELEV-04` réussi; compatibilité scalaire de `AC-ELEV-06` réussie. `AC-ELEV-03/03B/03C/05/07` restent volontairement aux jalons 2 et 3.
+- Preuves : tests ciblés `20 passed`; suite complète `95 passed, 2 skipped` (tests PostgreSQL réels déjà optionnels), avec un avertissement Starlette de dépendance préexistant; `git diff --check` sans erreur d’espace.
+- Limite de jalon : l’import/revue CAD produit encore une seule valeur par champ et les documents utilisent encore la vue scalaire de compatibilité. Aucun package, commit, push ni déploiement n’a été effectué.
+
+### Résultat du jalon 2 — import et revue CAD fidèles
+
+- `CadLevelDraft` transporte les trois tuples ordonnés sans conversion scalaire; le service de réconciliation les copie intégralement dans le projet v4.
+- Le parseur distingue les groupes situés après `cote/cotes`, conserve leur ordre et dérive les hauteurs uniquement pour les associations déterministes prévues par `BR-ELEV-04`.
+- Une hauteur calculée seule garde une confiance moyenne. La confiance devient élevée seulement si chaque hauteur est retrouvée sous le libellé de coupe verticale associé spatialement au tableau; les handles correspondants rejoignent les preuves.
+- La revue CAD affiche et édite les listes au format `+3,10 ; +5,70`, conserve la confiance et l’ambiguïté, puis transfère toutes les valeurs avec **Appliquer les choix**. Une saisie invalide affiche un message au lieu de fermer silencieusement la revue.
+- Verdicts : `AC-ELEV-03` réussi; `AC-ELEV-03B` réussi; `AC-ELEV-03C` réussi; `UX-ELEV-02` réussi. `AC-ELEV-05` et la partie documentaire/visuelle de `AC-ELEV-07` restent au jalon 3.
+- Preuves synthétiques : `21 passed` dans `tests/test_cad_import_flow.py`, dont associations un→plusieurs, plusieurs→un, association non déterministe, nombre isolé et application de valeurs modifiées.
+- Preuves réelles locales : EX 1 restitue Sous-sol `[-2.20] → [-0.20, 0.40] / [2.00, 2.60]` et RDC `[0.00, 0.60] → [3.60] / [3.60, 3.00]`; EX 3 restitue RDC `[0.20] → [3.10, 5.70] / [2.90, 5.50]`. Les deux flux passent revue → projet → sauvegarde v4 → réouverture sans avertissement CAD.
+- Régression : suite complète `99 passed, 2 skipped`, avec le même avertissement Starlette préexistant; `git diff --check` sans erreur d’espace.
+- Limite de jalon : les cinq DOCX utilisent encore la vue scalaire de compatibilité et ne rendent pas encore les variantes grammaticales multiples. Aucun package, commit, push ni déploiement n’a été effectué.
+
+### Résultat du jalon 3 — cinq documents cohérents
+
+- Le formateur documentaire central rend les quatre variantes singulier/pluriel de cotes et conserve exactement la formulation historique des dossiers scalaires.
+- Le narratif écrit une hauteur au singulier et plusieurs valeurs sous la forme `de hauteurs intérieures de 2,90 m et 5,50 m`; les en-têtes de PV Division, Règlement et Tableau B partagent le même texte de cotes.
+- Le parcours réel EX 3 passe import DXF → revue → projet v4 → sauvegarde/réouverture JSON → contrôle → génération des cinq DOCX. Le projet obtenu contient 8 niveaux et 44 parties, sans avertissement CAD.
+- Les cinq DOCX ont été inspectés en OOXML : aucune séquence d'encodage suspecte (`?`, caractère de remplacement, `Ã`, `Â`) et les textes multi-cotes/multi-hauteurs attendus sont présents dans les documents concernés.
+- Les cinq sorties ont été exportées localement par Microsoft Word et leurs 27 pages ont été inspectées en PNG : PV Division 4 pages, Règlement 15 pages, Tableau A 2 pages, Tableau B 4 pages et Tableau récapitulatif 2 pages. Les pieds du Règlement affichent intégralement `1/14` à `14/14`.
+- Verdicts : `AC-ELEV-05` réussi; `AC-ELEV-06` réussi; partie automatisable et visuelle locale de `AC-ELEV-07` réussie. Suite complète : `106 passed, 2 skipped`, avec un avertissement Starlette/httpx préexistant.
+- Le renderer canonique n'a pas trouvé LibreOffice sur cette station; l'export Word invisible a servi de solution de vérification locale. Aucun package, commit, push ou déploiement n'a été effectué.
+
+### [ORPHANS & PENDING]
+
+- [x] Obtenir l'approbation explicite de ce plan avant le jalon 1.
+- [x] Exécuter et vérifier le jalon 1 : données v4, migration, éditeur manuel et validation.
+- [x] Exécuter et vérifier le jalon 2 : extraction multi-cotes, hauteurs déterministes et revue CAD.
+- [x] Exécuter un seul jalon à la fois et demander l'approbation après sa vérification.
+- [x] Obtenir l'approbation explicite avant le jalon 3 documentaire.
+- [x] Exécuter et vérifier le jalon 3 : grammaire multi-cotes, hauteurs multiples, parcours EX 3 et inspection des cinq DOCX.
+- [ ] Obtenir le visa du topographe sur le rendu du cas à deux fins/deux hauteurs avant packaging.

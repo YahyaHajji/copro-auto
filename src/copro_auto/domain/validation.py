@@ -37,6 +37,31 @@ def validate_project(project: Project) -> list[ValidationIssue]:
         issues.append(ValidationIssue(Severity.ERROR, "identity.subdivision", "Le lotissement ou secteur est obligatoire."))
     if not identity.surveyor.strip():
         issues.append(ValidationIssue(Severity.ERROR, "identity.surveyor", "Le nom du topographe est obligatoire."))
+    if not identity.land_registry_office.strip():
+        issues.append(ValidationIssue(Severity.ERROR, "identity.land_registry_office", "La conservation foncière est obligatoire."))
+    client_fields = (
+        (identity.client.full_name, "full_name", "Le nom complet du client est obligatoire."),
+        (identity.client.national_id, "national_id", "La CNIE du client est obligatoire."),
+        (identity.client.address, "address", "L’adresse du client est obligatoire."),
+        (identity.client.capacity, "capacity", "La qualité du client est obligatoire."),
+    )
+    for value, field_name, message in client_fields:
+        if not value.strip():
+            issues.append(ValidationIssue(Severity.ERROR, f"identity.client.{field_name}", message))
+    if identity.client.national_id_expiry is None:
+        issues.append(ValidationIssue(
+            Severity.ERROR, "identity.client.national_id_expiry",
+            "La date d’expiration de la CNIE est obligatoire.",
+        ))
+    boundary_labels = {
+        "northeast": "Nord-Est", "northwest": "Nord-Ouest",
+        "southeast": "Sud-Est", "southwest": "Sud-Ouest",
+    }
+    for key, label in boundary_labels.items():
+        if not identity.boundaries.get(key, "").strip():
+            issues.append(ValidationIssue(
+                Severity.ERROR, f"identity.boundaries.{key}", f"La limite {label} est obligatoire.",
+            ))
     if not identity.overall_consistency.strip():
         issues.append(ValidationIssue(Severity.ERROR, "identity.overall_consistency", "La consistance générale est obligatoire."))
     if identity.total_height <= 0:
@@ -44,13 +69,28 @@ def validate_project(project: Project) -> list[ValidationIssue]:
     if not project.levels:
         issues.append(ValidationIssue(Severity.ERROR, "levels", "Ajoutez au moins un niveau."))
 
-    private_indices: set[str] = set()
     private_count = 0
     for level in project.levels:
         prefix = f"levels.{level.id}"
         level_indices: set[str] = set()
-        if level.end_elevation is not None and level.end_elevation <= level.start_elevation:
-            issues.append(ValidationIssue(Severity.ERROR, f"{prefix}.end_elevation", "La cote de fin doit dépasser la cote de début."))
+        if not level.start_elevations:
+            issues.append(ValidationIssue(
+                Severity.ERROR, f"{prefix}.start_elevations",
+                "Ajoutez au moins une cote de début.",
+            ))
+        if (
+            level.start_elevations and level.end_elevations
+            and min(level.end_elevations) <= max(level.start_elevations)
+        ):
+            issues.append(ValidationIssue(
+                Severity.ERROR, f"{prefix}.end_elevations",
+                "Chaque cote de fin doit dépasser toutes les cotes de début.",
+            ))
+        if any(height <= 0 for height in level.interior_heights):
+            issues.append(ValidationIssue(
+                Severity.ERROR, f"{prefix}.interior_heights",
+                "Chaque hauteur doit être positive.",
+            ))
         if not level.parts:
             issues.append(ValidationIssue(Severity.WARNING, f"{prefix}.parts", f"Le niveau « {level.name} » ne contient aucune partie."))
         for part in level.parts:
@@ -58,14 +98,10 @@ def validate_project(project: Project) -> list[ValidationIssue]:
             normalized_index = part.index.strip().casefold()
             if not normalized_index:
                 issues.append(ValidationIssue(Severity.ERROR, f"{part_path}.index", "L'indice de partie est obligatoire."))
-            elif normalized_index in level_indices or (
-                part.nature is PartNature.PRIVATE and normalized_index in private_indices
-            ):
+            elif normalized_index in level_indices:
                 issues.append(ValidationIssue(Severity.ERROR, f"{part_path}.index", f"L'indice « {part.index} » est dupliqué."))
             else:
                 level_indices.add(normalized_index)
-                if part.nature is PartNature.PRIVATE:
-                    private_indices.add(normalized_index)
             if not part.consistency.strip():
                 issues.append(ValidationIssue(Severity.ERROR, f"{part_path}.consistency", "La consistance est obligatoire."))
             if not part.description.strip():

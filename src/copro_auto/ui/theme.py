@@ -79,6 +79,8 @@ def build_stylesheet(p: Palette) -> str:
     * {{ font-family: "Segoe UI Variable", "Segoe UI", sans-serif; font-size: 10pt; }}
     QMainWindow, QWidget#AppRoot, QDialog, QMessageBox {{ background: {p.canvas}; color: {p.text}; }}
     QWidget#Sidebar {{ background: {p.sidebar}; color: {p.text}; border-right: 1px solid {p.border}; }}
+    QScrollArea#ProjectIdentityScroll, QScrollArea#ProjectIdentityScroll QWidget#qt_scrollarea_viewport,
+    QWidget#ProjectIdentityContent {{ background: {p.surface}; color: {p.text}; }}
     QWidget#Header, QFrame#Card, QFrame#Panel {{ background: {p.surface}; border: 1px solid {p.border}; border-radius: 12px; }}
     QFrame#Header {{ border-left: 4px solid {p.accent}; }}
     QLabel {{ background: transparent; color: {p.text}; }}
@@ -115,8 +117,8 @@ def build_stylesheet(p: Palette) -> str:
     QPushButton[role="license"]:focus {{ color: white; background: {p.primary}; border: 2px solid {p.primary_hover}; padding: 6px 9px; }}
     QPushButton[variant="ghost"] {{ color: {p.text}; background: transparent; border-color: transparent; text-align: left; padding: 9px 12px; }}
     QPushButton[variant="ghost"]:hover {{ background: {p.primary_soft}; border-color: {p.primary_soft}; }}
-    QLineEdit, QDateEdit, QComboBox, QSpinBox, QDoubleSpinBox {{ background: {p.input}; color: {p.text}; border: 1px solid {p.border}; border-radius: 7px; padding: 7px 9px; min-height: 20px; selection-background-color: {p.primary}; }}
-    QLineEdit:focus, QDateEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {{ border: 2px solid {p.primary}; padding: 6px 8px; }}
+    QLineEdit, QDateEdit, QTimeEdit, QComboBox, QSpinBox, QDoubleSpinBox {{ background: {p.input}; color: {p.text}; border: 1px solid {p.border}; border-radius: 7px; padding: 7px 9px; min-height: 20px; selection-background-color: {p.primary}; }}
+    QLineEdit:focus, QDateEdit:focus, QTimeEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {{ border: 2px solid {p.primary}; padding: 6px 8px; }}
     QLineEdit[invalid="true"] {{ border: 2px solid {p.danger}; }}
     QComboBox::drop-down {{ border: none; width: 24px; }}
     QComboBox QAbstractItemView {{ color: {p.text}; background: {p.surface}; selection-color: {p.text}; selection-background-color: {p.primary_soft}; border: 1px solid {p.border}; }}

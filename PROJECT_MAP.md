@@ -996,6 +996,17 @@ Les données restent locales. Les journaux peuvent contenir uniquement le nombre
 - Verdicts : `AC-ELEV-05` réussi; `AC-ELEV-06` réussi; partie automatisable et visuelle locale de `AC-ELEV-07` réussie. Suite complète : `106 passed, 2 skipped`, avec un avertissement Starlette/httpx préexistant.
 - Le renderer canonique n'a pas trouvé LibreOffice sur cette station; l'export Word invisible a servi de solution de vérification locale. Aucun package, commit, push ou déploiement n'a été effectué.
 
+### Résultat du jalon de distribution — version topographe du 27/08/2026
+
+- Le paquet Windows a été reconstruit après suppression, dans la spécification PyInstaller, des DLL ICU étrangères qui masquaient les bibliothèques Qt et provoquaient `DLL load failed while importing QtCore` sur l'exécutable distribué.
+- Le test de démarrage du paquet passe dans les modes licence locale, poste neuf sans licence et import CAD réel EX 3. Le même triplet de tests passe après extraction de l'archive finale dans un dossier distinct.
+- La suite complète passe après packaging : `106 passed, 2 skipped`, avec le même avertissement Starlette/httpx préexistant.
+- Archive USB : `CoproAuto-Topographe-2026-08-27.zip`, 76 265 461 octets, SHA-256 `167D0B10227A154470521CBB429768B03030D9482F5F9CC872B0E8876C67BFAB`.
+- Exécutable : SHA-256 `DC420C68934A72A310CC9644D648704F211DCCAD0E155B80727A81925C318B5B`. Il reste non signé; Windows peut donc afficher SmartScreen sur un nouveau poste.
+- Le ZIP ne contient ni code source, ni `.env`, clé privée, clé d'essai, document client ou artefact QA. Le guide `LISEZ-MOI.txt` est inclus à sa racine applicative.
+- Sources sauvegardées dans le commit `6201fec` et poussées sur `origin/codex/ui-ux-overhaul`; la PR #4 est mise à jour mais n'est pas fusionnée automatiquement dans `main`.
+- Serveur de licences déployé en production sur Vercel : déploiement `dpl_HCHrW59UfgjGkhtpCXDucHJU136e` en état `READY`. `https://copro-auto-license-api.vercel.app/health` retourne HTTP 200 avec `{"status":"ok"}`, ce qui vérifie aussi la connexion à la base. Aucun incident d'exécution n'a été détecté sur la dernière heure après déploiement.
+
 ### [ORPHANS & PENDING]
 
 - [x] Obtenir l'approbation explicite de ce plan avant le jalon 1.
@@ -1004,4 +1015,5 @@ Les données restent locales. Les journaux peuvent contenir uniquement le nombre
 - [x] Exécuter un seul jalon à la fois et demander l'approbation après sa vérification.
 - [x] Obtenir l'approbation explicite avant le jalon 3 documentaire.
 - [x] Exécuter et vérifier le jalon 3 : grammaire multi-cotes, hauteurs multiples, parcours EX 3 et inspection des cinq DOCX.
-- [ ] Obtenir le visa du topographe sur le rendu du cas à deux fins/deux hauteurs avant packaging.
+- [x] Préparer et vérifier le paquet USB après autorisation explicite de distribution.
+- [ ] Obtenir le visa terrain du topographe sur le paquet distribué, notamment le cas à deux fins/deux hauteurs.

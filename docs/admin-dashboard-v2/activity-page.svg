@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Copro Auto — proposition de la page Activité</title>
+  <desc id="desc">Journal d'activité paginé avec recherche, filtres, regroupement et export CSV.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="12" stdDeviation="22" flood-color="#173134" flood-opacity=".10"/></filter>
+    <style>
+      .ui{font-family:Inter,"Segoe UI",Arial,sans-serif;fill:#173134}.muted{fill:#678084}.white{fill:#fff}.side{fill:#b9cecd}.teal{fill:#168f86}.gold{fill:#9a6700}.blue{fill:#246b8e}.eyebrow{fill:#168f86;font-size:12px;font-weight:800;letter-spacing:1.7px}.h1{font-size:31px;font-weight:760}.h2{font-size:18px;font-weight:750}.body{font-size:14px}.small{font-size:12px}.tiny{font-size:11px}.bold{font-weight:720}.num{font-variant-numeric:tabular-nums}.cap{font-size:11px;font-weight:750;letter-spacing:.8px}.pill{font-size:11px;font-weight:760}
+    </style>
+  </defs>
+  <rect width="1600" height="1000" fill="#f3f7f6"/>
+  <rect width="236" height="1000" fill="#102c2f"/>
+  <rect x="22" y="24" width="44" height="44" rx="13" fill="#168f86"/><text x="44" y="52" text-anchor="middle" class="ui white bold body">CA</text><text x="80" y="41" class="ui white bold body">COPRO AUTO</text><text x="80" y="59" class="ui side small">Administration</text>
+  <text x="37" y="134" class="ui side" font-size="18">▦</text><text x="70" y="134" class="ui side bold body">Licences</text>
+  <rect x="14" y="165" width="208" height="48" rx="12" fill="#244649"/><text x="37" y="195" class="ui white" font-size="19">↻</text><text x="70" y="195" class="ui white bold body">Activité</text>
+  <line x1="22" y1="916" x2="214" y2="916" stroke="#315154"/><circle cx="31" cy="946" r="5" fill="#5bd1a9"/><text x="44" y="950" class="ui side small">Serveur opérationnel</text><text x="28" y="979" class="ui white small" text-decoration="underline">Se déconnecter</text>
+
+  <g transform="translate(276,42)">
+    <text y="0" class="ui eyebrow">JOURNAL DE SÉCURITÉ ET DE GESTION</text><text y="42" class="ui h1">Activité</text><text y="68" class="ui muted body">Mis à jour le 29 août 2026 à 14:35 · heure de Casablanca</text>
+    <rect x="954" y="5" width="144" height="44" rx="11" fill="#fff" stroke="#dce7e5"/><text x="1026" y="33" text-anchor="middle" class="ui bold body">⇩ Exporter CSV</text>
+    <rect x="1112" y="5" width="172" height="44" rx="11" fill="#168f86"/><text x="1198" y="33" text-anchor="middle" class="ui white bold body">↻ Actualiser</text>
+
+    <g transform="translate(0,105)">
+      <rect width="309" height="102" rx="16" fill="#fff" stroke="#dce7e5"/><text x="20" y="28" class="ui muted small bold">ÉVÉNEMENTS · 30 JOURS</text><text x="20" y="70" class="ui" fill="#0e7069" font-size="32" font-weight="760">348</text>
+      <rect x="325" width="309" height="102" rx="16" fill="#fff" stroke="#dce7e5"/><text x="345" y="28" class="ui muted small bold">ACTIVATIONS</text><text x="345" y="70" class="ui" fill="#246b8e" font-size="32" font-weight="760">27</text>
+      <rect x="650" width="309" height="102" rx="16" fill="#fff" stroke="#dce7e5"/><text x="670" y="28" class="ui muted small bold">ACTIONS ADMINISTRATIVES</text><text x="670" y="70" class="ui" fill="#0e7069" font-size="32" font-weight="760">18</text>
+      <rect x="975" width="309" height="102" rx="16" fill="#fff" stroke="#dce7e5"/><text x="995" y="28" class="ui muted small bold">POSTES LIBÉRÉS</text><text x="995" y="70" class="ui" fill="#9a6700" font-size="32" font-weight="760">6</text>
+    </g>
+
+    <g transform="translate(0,229)">
+      <rect width="1284" height="686" rx="18" fill="#fff" stroke="#dce7e5" filter="url(#shadow)"/>
+      <g transform="translate(24,20)">
+        <rect width="386" height="44" rx="11" fill="#fff" stroke="#cbdad8"/><text x="16" y="28" class="ui muted body">⌕  Rechercher un client ou un appareil…</text>
+        <rect x="424" width="114" height="44" rx="11" fill="#e3f4f1" stroke="#168f86"/><text x="481" y="28" text-anchor="middle" class="ui pill" fill="#0e7069">30 jours⌄</text>
+        <rect x="550" width="142" height="44" rx="11" fill="#fff" stroke="#dce7e5"/><text x="621" y="28" text-anchor="middle" class="ui pill">Catégorie · Toutes⌄</text>
+        <rect x="704" width="140" height="44" rx="11" fill="#fff" stroke="#dce7e5"/><text x="774" y="28" text-anchor="middle" class="ui pill">Origine · Toutes⌄</text>
+        <text x="862" y="28" class="ui small" fill="#168f86" text-decoration="underline">Effacer</text>
+        <rect x="1055" y="8" width="38" height="24" rx="12" fill="#168f86"/><circle cx="1081" cy="20" r="9" fill="#fff"/><text x="1104" y="25" class="ui muted small">Afficher les vérifications</text>
+      </g>
+      <line x1="0" y1="84" x2="1284" y2="84" stroke="#dce7e5"/>
+      <g transform="translate(0,84)">
+        <rect width="1284" height="44" fill="#fafcfb"/><text x="24" y="28" class="ui muted cap">DATE ET HEURE ↓</text><text x="238" y="28" class="ui muted cap">ÉVÉNEMENT</text><text x="574" y="28" class="ui muted cap">CLIENT</text><text x="812" y="28" class="ui muted cap">APPAREIL</text><text x="1062" y="28" class="ui muted cap">ORIGINE</text>
+        <g transform="translate(0,44)">
+          <rect width="1284" height="78" fill="#f8fbfa"/><text x="24" y="30" class="ui bold body num">29 août 2026 à 14:31</text><text x="24" y="52" class="ui muted tiny">il y a 4 minutes</text><circle cx="250" cy="28" r="14" fill="#e1f4eb"/><text x="250" y="33" text-anchor="middle" class="ui" fill="#12674d" font-size="14">✓</text><text x="276" y="31" class="ui bold body">Appareil activé</text><text x="276" y="53" class="ui muted small">Nouvelle place de licence occupée</text><text x="574" y="38" class="ui body">Cabinet Atlas</text><text x="812" y="38" class="ui body">ATLAS-PORTABLE</text><rect x="1062" y="23" width="94" height="28" rx="14" fill="#e8f3f8"/><text x="1109" y="42" text-anchor="middle" class="ui pill" fill="#246b8e">Application</text><text x="1249" y="41" class="ui" fill="#168f86" font-size="20">›</text>
+          <line y1="78" x2="1284" y2="78" stroke="#e8efee"/>
+          <g transform="translate(0,78)"><text x="24" y="30" class="ui bold body num">29 août 2026 à 11:04</text><text x="24" y="52" class="ui muted tiny">il y a 3 h 31</text><circle cx="250" cy="28" r="14" fill="#fff3d6"/><text x="250" y="33" text-anchor="middle" class="ui" fill="#9a6700" font-size="14">＋</text><text x="276" y="31" class="ui bold body">Licence prolongée de 365 jours</text><text x="276" y="53" class="ui muted small">Nouvelle échéance : 10 sept. 2027 à 23:59</text><text x="574" y="38" class="ui body">Cabinet Titan</text><text x="812" y="38" class="ui muted body">—</text><rect x="1062" y="23" width="112" height="28" rx="14" fill="#e3f4f1"/><text x="1118" y="42" text-anchor="middle" class="ui pill" fill="#0e7069">Administrateur</text><text x="1249" y="41" class="ui" fill="#168f86" font-size="20">›</text></g>
+          <line y1="156" x2="1284" y2="156" stroke="#e8efee"/>
+          <g transform="translate(0,156)"><text x="24" y="30" class="ui bold body num">29 août 2026 à 09:42</text><text x="24" y="52" class="ui muted tiny">il y a 4 h 53</text><circle cx="250" cy="28" r="14" fill="#fdebea"/><text x="250" y="33" text-anchor="middle" class="ui" fill="#c4473d" font-size="14">×</text><text x="276" y="31" class="ui bold body">Poste libéré</text><text x="276" y="53" class="ui muted small">La place peut être utilisée sur un autre ordinateur</text><text x="574" y="38" class="ui body">Bureau Al Omrane</text><text x="812" y="38" class="ui body">OMRANE-BUREAU</text><rect x="1062" y="23" width="112" height="28" rx="14" fill="#e3f4f1"/><text x="1118" y="42" text-anchor="middle" class="ui pill" fill="#0e7069">Administrateur</text><text x="1249" y="41" class="ui" fill="#168f86" font-size="20">›</text></g>
+          <line y1="234" x2="1284" y2="234" stroke="#e8efee"/>
+          <g transform="translate(0,234)"><text x="24" y="30" class="ui bold body num">28 août 2026 à 18:42</text><text x="24" y="52" class="ui muted tiny">hier</text><circle cx="250" cy="28" r="14" fill="#e8f3f8"/><text x="250" y="33" text-anchor="middle" class="ui" fill="#246b8e" font-size="14">↻</text><text x="276" y="31" class="ui bold body">Licence vérifiée</text><text x="276" y="53" class="ui muted small">12 vérifications regroupées · afficher</text><text x="574" y="38" class="ui body">Bureau Al Omrane</text><text x="812" y="38" class="ui body">OMRANE-PORTABLE</text><rect x="1062" y="23" width="94" height="28" rx="14" fill="#e8f3f8"/><text x="1109" y="42" text-anchor="middle" class="ui pill" fill="#246b8e">Application</text><text x="1249" y="41" class="ui" fill="#168f86" font-size="20">⌄</text></g>
+          <line y1="312" x2="1284" y2="312" stroke="#e8efee"/>
+          <g transform="translate(0,312)"><text x="24" y="30" class="ui bold body num">28 août 2026 à 16:16</text><text x="24" y="52" class="ui muted tiny">hier</text><circle cx="250" cy="28" r="14" fill="#fdebea"/><text x="250" y="33" text-anchor="middle" class="ui" fill="#c4473d" font-size="14">!</text><text x="276" y="31" class="ui bold body">Licence révoquée</text><text x="276" y="53" class="ui muted small">Les renouvellements en ligne sont interrompus</text><text x="574" y="38" class="ui body">Géo Conseil Meknès</text><text x="812" y="38" class="ui muted body">—</text><rect x="1062" y="23" width="112" height="28" rx="14" fill="#e3f4f1"/><text x="1118" y="42" text-anchor="middle" class="ui pill" fill="#0e7069">Administrateur</text><text x="1249" y="41" class="ui" fill="#168f86" font-size="20">›</text></g>
+          <line y1="390" x2="1284" y2="390" stroke="#e8efee"/>
+          <g transform="translate(0,390)"><text x="24" y="30" class="ui bold body num">28 août 2026 à 10:08</text><text x="24" y="52" class="ui muted tiny">hier</text><circle cx="250" cy="28" r="14" fill="#e1f4eb"/><text x="250" y="33" text-anchor="middle" class="ui" fill="#12674d" font-size="14">＋</text><text x="276" y="31" class="ui bold body">Licence créée</text><text x="276" y="53" class="ui muted small">Plan Bureau · 3 places · essai 30 jours</text><text x="574" y="38" class="ui body">Cabinet Najah</text><text x="812" y="38" class="ui muted body">—</text><rect x="1062" y="23" width="112" height="28" rx="14" fill="#e3f4f1"/><text x="1118" y="42" text-anchor="middle" class="ui pill" fill="#0e7069">Administrateur</text><text x="1249" y="41" class="ui" fill="#168f86" font-size="20">›</text></g>
+        </g>
+      </g>
+      <g transform="translate(24,620)">
+        <text x="0" y="27" class="ui muted small">1–25 sur 348 événements</text>
+        <text x="468" y="27" class="ui muted small">Lignes par page</text><rect x="566" y="0" width="66" height="38" rx="10" fill="#fff" stroke="#dce7e5"/><text x="599" y="25" text-anchor="middle" class="ui bold small">25⌄</text>
+        <rect x="919" y="0" width="108" height="38" rx="10" fill="#f2f5f4"/><text x="973" y="25" text-anchor="middle" class="ui muted bold small">‹ Précédent</text><rect x="1039" y="0" width="100" height="38" rx="10" fill="#e3f4f1" stroke="#168f86"/><text x="1089" y="25" text-anchor="middle" class="ui bold small" fill="#0e7069">Page 1</text><rect x="1151" y="0" width="109" height="38" rx="10" fill="#fff" stroke="#dce7e5"/><text x="1205" y="25" text-anchor="middle" class="ui bold small">Suivant ›</text>
+      </g>
+    </g>
+  </g>
+  <rect x="1380" y="952" width="194" height="28" rx="14" fill="#102c2f"/><text x="1477" y="970" text-anchor="middle" class="ui white tiny bold">DESIGN MOCKUP · UX v2</text>
+</svg>

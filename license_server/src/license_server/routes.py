@@ -15,6 +15,11 @@ class ActivateRequest(BaseModel):
     device_hash: str = Field(min_length=64, max_length=64)
     device_label: str = Field(default="", max_length=160)
     app_version: str = Field(default="", max_length=30)
+    os_name: str = Field(default="", max_length=40)
+    os_edition: str = Field(default="", max_length=80)
+    os_version: str = Field(default="", max_length=80)
+    os_build: str = Field(default="", max_length=80)
+    architecture: str = Field(default="", max_length=30)
 
 
 class ActivationRequest(BaseModel):
@@ -25,6 +30,11 @@ class ActivationRequest(BaseModel):
 class RefreshRequest(ActivationRequest):
     device_hash: str = Field(min_length=64, max_length=64)
     app_version: str = Field(default="", max_length=30)
+    os_name: str = Field(default="", max_length=40)
+    os_edition: str = Field(default="", max_length=80)
+    os_version: str = Field(default="", max_length=80)
+    os_build: str = Field(default="", max_length=80)
+    architecture: str = Field(default="", max_length=30)
 
 
 def session(request: Request):
@@ -45,6 +55,8 @@ def activate(payload: ActivateRequest, database: Session = Depends(session), lic
     try:
         token, secret = licenses.activate(
             database, payload.license_key, payload.device_hash, payload.device_label, payload.app_version,
+            os_name=payload.os_name, os_edition=payload.os_edition, os_version=payload.os_version,
+            os_build=payload.os_build, architecture=payload.architecture,
         )
         return {"token": token, "activation_secret": secret}
     except ServiceError as exc:
@@ -56,6 +68,8 @@ def refresh(payload: RefreshRequest, database: Session = Depends(session), licen
     try:
         token = licenses.refresh(
             database, payload.activation_id, payload.activation_secret, payload.device_hash, payload.app_version,
+            os_name=payload.os_name, os_edition=payload.os_edition, os_version=payload.os_version,
+            os_build=payload.os_build, architecture=payload.architecture,
         )
         return {"token": token}
     except ServiceError as exc:

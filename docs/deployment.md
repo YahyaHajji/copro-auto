@@ -44,9 +44,9 @@ La ligne privée va uniquement dans le secret `LICENSE_SIGNING_PRIVATE_KEY` du s
 Le chemin le plus simple pour l'essai en ligne utilise Neon Free pour PostgreSQL et Vercel Hobby pour l'API HTTPS. Vercel exécute directement l'application FastAPI depuis `license_server/app.py`. Aucun secret ni URL PostgreSQL n'est enregistré dans Git.
 
 1. Créer un projet Neon PostgreSQL 18 dans la région Frankfurt, sans Neon Auth.
-2. Appliquer `license_server/migrations/0001_initial.sql` avec l'URL directe Neon.
+2. Appliquer, dans l'ordre, tous les fichiers SQL de `license_server/migrations/` avec l'URL directe Neon (`0001_initial.sql`, `0002_admin_dashboard.sql`, puis `0003_dashboard_v2.sql`). Les migrations sont idempotentes et doivent être exécutées avant la version serveur correspondante.
 3. Importer le dépôt GitHub privé dans un projet Vercel Hobby personnel et choisir `license_server` comme répertoire racine.
-4. Dans Vercel, fournir l'URL Neon avec pool de connexions comme `DATABASE_URL`, puis `LICENSE_SIGNING_PRIVATE_KEY`, `LICENSE_KEY_PEPPER`, `LEASE_DAYS=30`, `ADMIN_PASSWORD_HASH` et `ADMIN_SESSION_SECRET` pour Production et Preview. Générer le hash du mot de passe avec `copro-admin-password`; conserver le mot de passe dans un gestionnaire de mots de passe et ne jamais l'ajouter au dépôt.
+4. Dans Vercel, fournir l'URL Neon avec pool de connexions comme `DATABASE_URL`, puis `LICENSE_SIGNING_PRIVATE_KEY`, `LICENSE_KEY_PEPPER`, `LEASE_DAYS=1`, `ADMIN_PASSWORD_HASH`, `ADMIN_SESSION_SECRET` et `DESKTOP_CURRENT_VERSION` pour Production et Preview. Cette dernière valeur pilote l'indicateur de versions desktop obsolètes. Le desktop renouvelle ce lease de 24 heures au démarrage, toutes les 15 minutes et avant chaque action productive; après son expiration, la grâce locale de 2 jours est strictement en lecture seule. Générer le hash du mot de passe avec `copro-admin-password`; conserver le mot de passe dans un gestionnaire de mots de passe et ne jamais l'ajouter au dépôt.
 5. Vérifier que `https://<service>.vercel.app/health` répond `200 {"status":"ok"}`.
 6. Injecter l'URL Vercel et uniquement la clé publique Ed25519 dans le desktop avec `packaging/configure_license.py`, puis reconstruire le package.
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import shutil
 import subprocess
 import tempfile
@@ -34,25 +35,40 @@ def convert_dwg_to_dxf(source: str | Path, destination: str | Path | None = None
     owned_temp = destination is None
     output = Path(destination) if destination else Path(tempfile.mkdtemp(prefix="CoproAuto-")) / f"{source_path.stem}.dxf"
     output.parent.mkdir(parents=True, exist_ok=True)
+    isolation = Path(tempfile.mkdtemp(prefix="CoproAuto-AutoCAD-"))
     script = output.parent / f"{source_path.stem}-export.scr"
-    script.write_text(f"_.DXFOUT\n{output}\n16\n_.QUIT\n_N\n", encoding="ascii", errors="strict")
-    LOGGER.info("cad_conversion_started source=%s", source_path.name)
+    script.write_text(f"_.FILEDIA\n0\n_.DXFOUT\n{output}\n16\n_.QUIT\n_N\n", encoding="ascii", errors="strict")
+    LOGGER.info("cad_conversion_started extension=%s", source_path.suffix.casefold())
     try:
         completed = subprocess.run(
-            [str(console), "/i", str(source_path), "/s", str(script), "/l", "en-US"],
+            [
+                str(console), "/i", str(source_path), "/s", str(script), "/l", "en-US",
+                "/isolate", f"CoproAuto-{os.getpid()}", str(isolation), "/readonly",
+            ],
             capture_output=True,
-            timeout=180,
+            timeout=90,
             check=False,
         )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        raise DwgConversionError(f"La conversion DWG a échoué : {exc}") from exc
+    except subprocess.TimeoutExpired as exc:
+        if owned_temp:
+            shutil.rmtree(output.parent, ignore_errors=True)
+        raise DwgConversionError(
+            "AutoCAD n’a pas terminé la conversion dans le délai prévu. "
+            "Ouvrez le dessin dans AutoCAD, exportez-le en DXF R2018, puis importez ce DXF."
+        ) from None
+    except OSError as exc:
+        if owned_temp:
+            shutil.rmtree(output.parent, ignore_errors=True)
+        raise DwgConversionError("AutoCAD n’a pas pu démarrer la conversion. Exportez le dessin en DXF R2018.") from None
     finally:
         script.unlink(missing_ok=True)
+        shutil.rmtree(isolation, ignore_errors=True)
     if completed.returncode != 0 or not output.exists() or output.stat().st_size == 0:
         if owned_temp:
             shutil.rmtree(output.parent, ignore_errors=True)
-        detail = completed.stderr.decode(errors="replace")[-500:]
-        raise DwgConversionError(f"AutoCAD n'a pas produit de DXF valide. {detail}")
+        LOGGER.warning("cad_conversion_no_output returncode=%d", completed.returncode)
+        raise DwgConversionError(
+            "AutoCAD n’a pas produit de DXF valide. Exportez le dessin en DXF R2018, puis importez ce DXF."
+        )
     LOGGER.info("cad_conversion_completed bytes=%d", output.stat().st_size)
     return output
-

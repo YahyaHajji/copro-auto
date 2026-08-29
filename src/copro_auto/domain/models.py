@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timezone
 from decimal import Decimal
 from enum import StrEnum
 from typing import Any
@@ -9,6 +9,30 @@ from uuid import uuid4
 
 
 ZERO = Decimal("0")
+
+
+def decimal_from(value: Any) -> Decimal:
+    if isinstance(value, Decimal):
+        return value
+    return Decimal(str(value or "0"))
+
+
+def decimal_tuple_from(values: Any) -> tuple[Decimal, ...]:
+    """Normalize one or more decimal values while preserving their order."""
+    if values is None:
+        return ()
+    if isinstance(values, (str, Decimal, int, float)):
+        source = (values,)
+    else:
+        source = tuple(values)
+    result: list[Decimal] = []
+    for value in source:
+        if value is None or (isinstance(value, str) and not value.strip()):
+            continue
+        parsed = decimal_from(value)
+        if parsed not in result:
+            result.append(parsed)
+    return tuple(result)
 
 
 class PartNature(StrEnum):
@@ -58,6 +82,10 @@ class FieldDecision:
     cad_value: str | None
     active_value: str
     selected_source: EvidenceSource
+    confidence: str = ""
+    source_file: str = ""
+    entity_reference: str = ""
+    source_fingerprint: str = ""
     decided_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
@@ -77,11 +105,50 @@ class Part:
 class Level:
     name: str
     order: int
-    start_elevation: Decimal
-    end_elevation: Decimal | None
-    interior_height: Decimal | None
+    start_elevations: tuple[Decimal, ...]
+    end_elevations: tuple[Decimal, ...] = ()
+    interior_heights: tuple[Decimal, ...] = ()
     parts: list[Part] = field(default_factory=list)
     id: str = field(default_factory=lambda: str(uuid4()))
+
+    def __post_init__(self) -> None:
+        self.start_elevations = decimal_tuple_from(self.start_elevations)
+        self.end_elevations = decimal_tuple_from(self.end_elevations)
+        self.interior_heights = decimal_tuple_from(self.interior_heights)
+
+    @property
+    def start_elevation(self) -> Decimal:
+        """Compatibility view used until CAD and documents adopt plural values."""
+        return self.start_elevations[0] if self.start_elevations else ZERO
+
+    @start_elevation.setter
+    def start_elevation(self, value: Decimal) -> None:
+        self.start_elevations = decimal_tuple_from(value)
+
+    @property
+    def end_elevation(self) -> Decimal | None:
+        return max(self.end_elevations) if self.end_elevations else None
+
+    @end_elevation.setter
+    def end_elevation(self, value: Decimal | None) -> None:
+        self.end_elevations = decimal_tuple_from(value)
+
+    @property
+    def interior_height(self) -> Decimal | None:
+        return self.interior_heights[0] if len(self.interior_heights) == 1 else None
+
+    @interior_height.setter
+    def interior_height(self, value: Decimal | None) -> None:
+        self.interior_heights = decimal_tuple_from(value)
+
+
+@dataclass(slots=True)
+class ClientInformation:
+    full_name: str = ""
+    national_id: str = ""
+    address: str = ""
+    capacity: str = ""
+    national_id_expiry: date | None = None
 
 
 @dataclass(slots=True)
@@ -93,9 +160,12 @@ class ProjectIdentity:
     subdivision: str = ""
     surveyor: str = ""
     project_date: date = field(default_factory=date.today)
+    project_time: time = field(default_factory=lambda: time(10, 0))
     land_area: Decimal = ZERO
     overall_consistency: str = ""
     total_height: Decimal = ZERO
+    land_registry_office: str = ""
+    client: ClientInformation = field(default_factory=ClientInformation)
     boundaries: dict[str, str] = field(default_factory=dict)
 
 
@@ -115,12 +185,6 @@ class Project:
     decisions: list[FieldDecision] = field(default_factory=list)
     generations: list[GenerationRecord] = field(default_factory=list)
     id: str = field(default_factory=lambda: str(uuid4()))
-    schema_version: int = 1
+    schema_version: int = 4
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     modified_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-
-
-def decimal_from(value: Any) -> Decimal:
-    if isinstance(value, Decimal):
-        return value
-    return Decimal(str(value or "0"))

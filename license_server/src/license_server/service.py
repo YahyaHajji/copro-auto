@@ -72,6 +72,24 @@ class LicenseService:
         if not hmac.compare_digest(expected, activation.secret_digest):
             raise ServiceError("invalid_activation", "Activation non reconnue.", 403)
 
+    @staticmethod
+    def _update_device_metadata(
+        activation: Activation, *, os_name: str = "", os_edition: str = "", os_version: str = "",
+        os_build: str = "", architecture: str = "",
+    ) -> None:
+        # Older desktop builds do not send this metadata. Preserve values already
+        # learned from a newer build instead of erasing them on a legacy refresh.
+        if os_name:
+            activation.os_name = os_name[:40]
+        if os_edition:
+            activation.os_edition = os_edition[:80]
+        if os_version:
+            activation.os_version = os_version[:80]
+        if os_build:
+            activation.os_build = os_build[:80]
+        if architecture:
+            activation.architecture = architecture[:30]
+
     def _issue(self, license_record: License, activation: Activation, now: datetime) -> str:
         lease_expiry = min(now + timedelta(days=self.settings.lease_days), aware(license_record.commercial_expires_at))
         claims = {
@@ -89,7 +107,11 @@ class LicenseService:
         }
         return sign_claims(self.settings.private_key, claims)
 
-    def activate(self, session: Session, key: str, device_hash: str, device_label: str, app_version: str) -> tuple[str, str]:
+    def activate(
+        self, session: Session, key: str, device_hash: str, device_label: str, app_version: str, *,
+        os_name: str = "", os_edition: str = "", os_version: str = "", os_build: str = "",
+        architecture: str = "",
+    ) -> tuple[str, str]:
         now = utc_now()
         license_record = self._license_by_key(session, key)
         self._validate_license(license_record, now)
@@ -107,6 +129,10 @@ class LicenseService:
                 license_id=license_record.id, device_hash=device_hash, device_label=device_label[:160],
                 secret_digest=digest_secret(activation_secret, self.settings.key_pepper), app_version=app_version,
             )
+            self._update_device_metadata(
+                activation, os_name=os_name, os_edition=os_edition, os_version=os_version,
+                os_build=os_build, architecture=architecture,
+            )
             session.add(activation)
             session.flush()
         else:
@@ -122,13 +148,21 @@ class LicenseService:
             activation.device_label = device_label[:160]
             activation.app_version = app_version
             activation.last_seen_at = now
+            self._update_device_metadata(
+                activation, os_name=os_name, os_edition=os_edition, os_version=os_version,
+                os_build=os_build, architecture=architecture,
+            )
         token = self._issue(license_record, activation, now)
         self._audit(session, "activate", license_record.id, activation.id, app_version=app_version)
         session.commit()
         LOGGER.info("license_activated license_id=%s activation_id=%s app_version=%s", license_record.id, activation.id, app_version)
         return token, activation_secret
 
-    def refresh(self, session: Session, activation_id: str, secret: str, device_hash: str, app_version: str) -> str:
+    def refresh(
+        self, session: Session, activation_id: str, secret: str, device_hash: str, app_version: str, *,
+        os_name: str = "", os_edition: str = "", os_version: str = "", os_build: str = "",
+        architecture: str = "",
+    ) -> str:
         now = utc_now()
         activation = session.get(Activation, activation_id)
         if activation is None or activation.status != "active":
@@ -139,6 +173,10 @@ class LicenseService:
         self._validate_license(activation.license, now)
         activation.last_seen_at = now
         activation.app_version = app_version
+        self._update_device_metadata(
+            activation, os_name=os_name, os_edition=os_edition, os_version=os_version,
+            os_build=os_build, architecture=architecture,
+        )
         token = self._issue(activation.license, activation, now)
         self._audit(session, "refresh", activation.license_id, activation.id, app_version=app_version)
         session.commit()

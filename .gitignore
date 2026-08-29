@@ -33,6 +33,7 @@ Thumbs.db
 *.p12
 *.pfx
 work/
+qa_artifacts/
 /output/
 /outputs/
 /exports/

@@ -1,6 +1,6 @@
 # Copro Auto
 
-Application Windows locale pour saisir une fois les données d'un dossier de copropriété, vérifier les calculs et produire six documents Word cohérents.
+Application Windows locale pour saisir ou importer les données d'un dossier de copropriété, vérifier les calculs et produire cinq documents Word cohérents.
 
 ## Développement
 

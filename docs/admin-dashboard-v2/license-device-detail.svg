@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Copro Auto — détail d'une licence et de ses appareils</title>
+  <desc id="desc">Panneau latéral détaillant les états, versions et heures de connexion des appareils.</desc>
+  <defs>
+    <filter id="shadow" x="-30%" y="-10%" width="170%" height="130%"><feDropShadow dx="-12" dy="0" stdDeviation="22" flood-color="#173134" flood-opacity=".18"/></filter>
+    <style>
+      .ui{font-family:Inter,"Segoe UI",Arial,sans-serif;fill:#173134}.muted{fill:#678084}.white{fill:#fff}.side{fill:#b9cecd}.eyebrow{fill:#168f86;font-size:12px;font-weight:800;letter-spacing:1.7px}.h1{font-size:30px;font-weight:760}.h2{font-size:18px;font-weight:750}.body{font-size:14px}.small{font-size:12px}.tiny{font-size:11px}.bold{font-weight:720}.num{font-variant-numeric:tabular-nums}.label{font-size:11px;font-weight:750;letter-spacing:.5px}.pill{font-size:11px;font-weight:760}
+    </style>
+  </defs>
+  <rect width="1600" height="1000" fill="#f3f7f6"/>
+  <rect width="236" height="1000" fill="#102c2f"/><rect x="22" y="24" width="44" height="44" rx="13" fill="#168f86"/><text x="44" y="52" text-anchor="middle" class="ui white bold body">CA</text><text x="80" y="41" class="ui white bold body">COPRO AUTO</text><text x="80" y="59" class="ui small" fill="#a7c1c0">Administration</text>
+  <rect x="14" y="104" width="208" height="48" rx="12" fill="#244649"/><text x="70" y="134" class="ui white bold body">▦  Licences</text><text x="70" y="191" class="ui side bold body">↻  Activité</text>
+  <g opacity=".42" transform="translate(276,42)">
+    <text y="0" class="ui eyebrow">GESTION CENTRALISÉE</text><text y="42" class="ui h1">Licences</text><g transform="translate(0,105)"><rect width="226" height="120" rx="16" fill="#fff" stroke="#dce7e5"/><rect x="240" width="226" height="120" rx="16" fill="#fff" stroke="#dce7e5"/><rect x="480" width="226" height="120" rx="16" fill="#fff" stroke="#dce7e5"/></g><rect y="247" width="750" height="650" rx="18" fill="#fff" stroke="#dce7e5"/></g>
+  <rect x="236" width="1364" height="1000" fill="#102c2f" opacity=".19"/>
+
+  <g transform="translate(786,0)" filter="url(#shadow)">
+    <rect width="814" height="1000" fill="#fff"/>
+    <rect width="814" height="132" fill="#f8fbfa"/><line x1="0" y1="132" x2="814" y2="132" stroke="#dce7e5"/>
+    <text x="36" y="36" class="ui eyebrow">DÉTAIL DE LA LICENCE</text><text x="36" y="78" class="ui h1">Cabinet Atlas</text><text x="36" y="106" class="ui muted body">Clé •••• 9F2A · Commerciale</text>
+    <rect x="592" y="52" width="112" height="30" rx="15" fill="#fff3d6"/><text x="648" y="72" text-anchor="middle" class="ui pill" fill="#765d1e">À renouveler</text>
+    <rect x="734" y="30" width="44" height="44" rx="12" fill="#eef4f3"/><text x="756" y="60" text-anchor="middle" class="ui muted" font-size="25">×</text>
+
+    <g transform="translate(36,158)">
+      <rect width="228" height="82" rx="13" fill="#f2f7f6"/><text x="16" y="25" class="ui muted label">PLAN</text><text x="16" y="54" class="ui bold body">Bureau</text>
+      <rect x="242" width="258" height="82" rx="13" fill="#fff3d6"/><text x="258" y="25" class="ui" fill="#8a6505" font-size="11" font-weight="750">ÉCHÉANCE</text><text x="258" y="54" class="ui bold body num">10 sept. 2026 à 23:59</text><text x="258" y="72" class="ui tiny" fill="#8a6505">dans 12 jours</text>
+      <rect x="514" width="228" height="82" rx="13" fill="#f2f7f6"/><text x="530" y="25" class="ui muted label">PLACES</text><text x="530" y="54" class="ui bold body num">2 utilisées sur 2</text><text x="530" y="72" class="ui muted tiny">créée le 12 août à 09:18</text>
+    </g>
+
+    <g transform="translate(36,271)">
+      <text x="0" y="0" class="ui h2">Places actives</text><text x="706" y="0" text-anchor="end" class="ui muted small">2 appareils</text>
+      <g transform="translate(0,22)">
+        <rect width="742" height="242" rx="16" fill="#fff" stroke="#cfe0de" stroke-width="1.5"/>
+        <circle cx="30" cy="34" r="7" fill="#2da879"/><text x="48" y="39" class="ui bold body">ATLAS-PORTABLE</text>
+        <rect x="466" y="20" width="79" height="28" rx="14" fill="#e1f4eb"/><text x="506" y="39" text-anchor="middle" class="ui pill" fill="#12674d">● Actif</text>
+        <rect x="555" y="20" width="104" height="28" rx="14" fill="#e8f3f8"/><text x="607" y="39" text-anchor="middle" class="ui pill" fill="#246b8e">● En ligne</text>
+        <text x="48" y="66" class="ui muted small">Windows 11 Pro 23H2 · build 22631 · x64</text>
+        <text x="48" y="89" class="ui small">Copro Auto 0.3.0</text><rect x="175" y="72" width="119" height="24" rx="12" fill="#fff3d6"/><text x="235" y="89" text-anchor="middle" class="ui pill" fill="#765d1e">Mise à jour 0.4.0</text>
+        <line x1="24" y1="112" x2="718" y2="112" stroke="#e8efee"/>
+        <text x="24" y="139" class="ui muted label">PREMIÈRE ACTIVATION</text><text x="24" y="162" class="ui body num">12 août 2026 à 10:05</text>
+        <text x="268" y="139" class="ui muted label">DERNIER CONTACT</text><text x="268" y="162" class="ui body num">29 août 2026 à 14:31</text><text x="268" y="181" class="ui" fill="#246b8e" font-size="11" font-weight="700">il y a 4 minutes</text>
+        <text x="530" y="139" class="ui muted label">IDENTIFIANT SUPPORT</text><text x="530" y="162" class="ui body num">A19C04F2</text>
+        <rect x="24" y="195" width="150" height="34" rx="10" fill="#fff" stroke="#dce7e5"/><text x="99" y="217" text-anchor="middle" class="ui bold small">Masquer les détails</text>
+        <rect x="560" y="191" width="158" height="38" rx="10" fill="#fdebea"/><text x="639" y="215" text-anchor="middle" class="ui bold small" fill="#c4473d">Libérer ce poste</text>
+      </g>
+
+      <g transform="translate(0,278)">
+        <rect width="742" height="120" rx="16" fill="#fff" stroke="#dce7e5"/>
+        <circle cx="30" cy="34" r="7" fill="#98a6a8"/><text x="48" y="39" class="ui bold body">ATLAS-BUREAU</text>
+        <rect x="466" y="20" width="79" height="28" rx="14" fill="#e1f4eb"/><text x="506" y="39" text-anchor="middle" class="ui pill" fill="#12674d">● Actif</text>
+        <rect x="555" y="20" width="112" height="28" rx="14" fill="#eef2f2"/><text x="611" y="39" text-anchor="middle" class="ui pill" fill="#5f6f72">● Hors ligne</text>
+        <text x="48" y="66" class="ui muted small">Windows 10 Pro 22H2 · x64 · Copro Auto 0.4.0</text>
+        <text x="48" y="92" class="ui small num">Dernier contact : 28 août 2026 à 17:42 · il y a 20 h 53</text>
+        <text x="694" y="78" text-anchor="middle" class="ui" fill="#168f86" font-size="20">⌄</text>
+      </g>
+
+      <g transform="translate(0,426)">
+        <rect width="742" height="52" rx="12" fill="#f8fbfa" stroke="#dce7e5"/><text x="20" y="32" class="ui bold body">Historique des postes libérés</text><text x="704" y="32" text-anchor="end" class="ui muted small">3 appareils  ›</text>
+      </g>
+
+      <line x1="0" y1="505" x2="742" y2="505" stroke="#dce7e5"/>
+      <text x="0" y="539" class="ui h2">Actions sur la licence</text>
+      <rect x="0" y="560" width="136" height="44" rx="11" fill="#fff" stroke="#dce7e5"/><text x="68" y="588" text-anchor="middle" class="ui bold body">Prolonger</text>
+      <rect x="148" y="560" width="151" height="44" rx="11" fill="#fdebea"/><text x="224" y="588" text-anchor="middle" class="ui bold body" fill="#c4473d">Révoquer</text>
+      <text x="742" y="587" text-anchor="end" class="ui muted small">Dernière modification : 29 août 2026 à 11:04</text>
+    </g>
+  </g>
+  <rect x="1380" y="952" width="194" height="28" rx="14" fill="#102c2f"/><text x="1477" y="970" text-anchor="middle" class="ui white tiny bold">DESIGN MOCKUP · UX v1</text>
+</svg>

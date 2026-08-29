@@ -1,6 +1,7 @@
 param(
     [string]$ReleaseDirectory = "dist\CoproAuto",
     [int]$TimeoutSeconds = 30,
+    [string]$CadSamplePath = "",
     [switch]$RequireValidSignature
 )
 
@@ -21,6 +22,8 @@ New-Item -ItemType Directory -Force -Path $profile | Out-Null
 $saved = @{
     COPRO_AUTO_DEV_LICENSE = $env:COPRO_AUTO_DEV_LICENSE
     COPRO_AUTO_LICENSE_SERVER = $env:COPRO_AUTO_LICENSE_SERVER
+    COPRO_AUTO_LOG_DIR = $env:COPRO_AUTO_LOG_DIR
+    COPRO_AUTO_SMOKE_CAD = $env:COPRO_AUTO_SMOKE_CAD
     LOCALAPPDATA = $env:LOCALAPPDATA
     APPDATA = $env:APPDATA
 }
@@ -34,6 +37,7 @@ function Invoke-CoproSmoke([string]$Name, [bool]$DevelopmentLicense) {
     $env:COPRO_AUTO_LICENSE_SERVER = "http://127.0.0.1:9"
     $env:LOCALAPPDATA = Join-Path $profile $Name
     $env:APPDATA = Join-Path $profile $Name
+    $env:COPRO_AUTO_LOG_DIR = Join-Path $profile "$Name\Logs"
     New-Item -ItemType Directory -Force -Path $env:LOCALAPPDATA | Out-Null
 
     $process = Start-Process -FilePath $executable -ArgumentList "--smoke-test" -WindowStyle Hidden -PassThru
@@ -50,6 +54,23 @@ function Invoke-CoproSmoke([string]$Name, [bool]$DevelopmentLicense) {
 try {
     Invoke-CoproSmoke "licensed-offline" $true
     Invoke-CoproSmoke "fresh-unlicensed" $false
+    if ($CadSamplePath) {
+        $cadSample = (Resolve-Path -LiteralPath $CadSamplePath).Path
+        if ([System.IO.Path]::GetExtension($cadSample).ToLowerInvariant() -ne ".dxf") {
+            throw "Le smoke test CAD exige un fichier DXF."
+        }
+        $env:COPRO_AUTO_SMOKE_CAD = $cadSample
+        $env:COPRO_AUTO_LOG_DIR = Join-Path $profile "cad-dxf\Logs"
+        $cadProcess = Start-Process -FilePath $executable -ArgumentList "--smoke-cad" -WindowStyle Hidden -PassThru
+        if (-not $cadProcess.WaitForExit($TimeoutSeconds * 1000)) {
+            Stop-Process -Id $cadProcess.Id -Force
+            throw "Le test 'cad-dxf' a dépassé $TimeoutSeconds secondes."
+        }
+        if ($cadProcess.ExitCode -ne 0) {
+            throw "Le test 'cad-dxf' a échoué avec le code $($cadProcess.ExitCode)."
+        }
+        Write-Output "PASS cad-dxf"
+    }
     $hash = (Get-FileHash -LiteralPath $executable -Algorithm SHA256).Hash
     Write-Output "SHA256 $hash"
     Write-Output "SIGNATURE $($signature.Status)"

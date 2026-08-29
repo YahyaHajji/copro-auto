@@ -1,44 +1,37 @@
-# Design QA — thème clair Copro Auto
+# Design QA — cohérence UI/UX globale Copro Auto
 
 ## Evidence
 
-- Source visual truth: `C:\Users\yahya\.codex\generated_images\019f7654-06df-7c03-ad8f-b6baf4f292e7\exec-bcb85e9c-444b-4d21-9228-9cb67d4150c3.png`
-- Implementation screenshot: `C:\Users\yahya\Saved Games\intelligent document automation platform\work\light-theme-preview-native.png`
-- Hover-state screenshot: `C:\Users\yahya\Saved Games\intelligent document automation platform\work\light-theme-license-hover-native.png`
-- Combined comparison: `C:\Users\yahya\Saved Games\intelligent document automation platform\work\light-theme-comparison-native.png`
-- Source pixels: 1630 × 965, including the native title bar.
-- Implementation pixels: 2884 × 1760 from a native Qt window grab.
-- CSS/logical viewport requested from Qt: 1600 × 920; Windows display scaling produced the higher-density native capture.
-- Density normalization: the source content below its 30 px title bar was resized to the implementation capture dimensions only for the combined visual comparison.
-- State: new empty dossier, `Projet` tab, validation list visible; a second capture covers the licence-button hover state.
+- Référence visuelle approuvée : `C:\Users\yahya\.codex\generated_images\019f7654-06df-7c03-ad8f-b6baf4f292e7\exec-bcb85e9c-444b-4d21-9228-9cb67d4150c3.png`.
+- Matrice de l’application source : `work/ui-ux-final/06-application-matrix.png`.
+- Matrice de toutes les catégories de messages : `work/ui-ux-final/07-messagebox-matrix.png`.
+- Comparaison côte à côte référence/implémentation : `work/ui-ux-final/08-reference-comparison.png`.
+- Capture Windows.Graphics.Capture du binaire packagé : `dist-updated/CoproAuto/CoproAuto.exe`, fenêtre 1435 × 899 avec chrome Windows clair.
+- États inspectés : Projet vide, Niveaux et parties à taille contrainte, licence invalide, comparaison DWG/DXF identique/différent/manquant, information, succès, avertissement, erreur critique et question de modifications non enregistrées.
 
-## Findings
+## Findings et corrections
 
-- No actionable P0, P1 or P2 mismatch remains.
-- Fonts and typography: Segoe UI Variable/Segoe UI, hierarchy, weights and readable French copy match the reference closely.
-- Spacing and layout rhythm: sidebar, header, editor card and validation panel retain the existing responsive Qt layout and align with the reference composition.
-- Colors and visual tokens: white sidebar and surfaces, pale blue-gray canvas/alternating rows, dark text, teal actions and gold header accent match the target palette.
-- Image quality and asset fidelity: the screen contains no custom raster artwork that required recreation; the native application icon and Qt-rendered controls remain intact.
-- Copy and content: application-specific French labels and validation messages are unchanged.
-- Interaction state: the licence button remains teal with white text on hover, focus and press instead of becoming white-on-white.
+- La composition reste fidèle à la référence : barre latérale blanche, canevas bleu-gris très clair, cartes blanches, accent or, actions teal et texte sombre.
+- Toutes les surfaces applicatives sont désormais claires, y compris `QDialog`, `QMessageBox`, boutons de dialogue, listes, menus, calendriers, popups et barres de défilement horizontales.
+- Le dialogue de licence possède une hiérarchie nette, un statut sémantique lisible, un libellé associé à la clé, une action principale et une zone destructive isolée.
+- La comparaison DWG/DXF utilise texte, icône et couleur pour distinguer identique, différent et manquant; la saisie manuelle reste sélectionnée par défaut.
+- Les messages information/succès/avertissement/critique/question utilisent des fonds et icônes sémantiques, des boutons français, un bouton principal visible et une action destructive distincte.
+- La première capture a révélé un P1 absent des tests : une longue erreur critique pouvait être tronquée. Le wrapper central insère désormais des retours de ligne sûrs; la capture de contrôle affiche la phrase complète.
+- À 1080 × 700, les tables Niveaux et Parties, leurs en-têtes et l’aide ne se chevauchent plus. Le panneau de contrôle est borné à 360 px et l’éditeur conserve la priorité de largeur.
+- Les chemins techniques `identity.*` sont remplacés visuellement par des emplacements métier français; les erreurs et avertissements restent identifiables sans dépendre uniquement de la couleur.
+- Le binaire final affiche les mêmes tokens et libellés que la source; son chrome natif est clair et la liste de validation reste lisible.
 
-Focused-region comparison was needed only for the licence control because the user supplied a separate hover-state defect. The native hover capture verifies the corrected foreground/background contrast.
+## Vérification
 
-## Comparison history
+- Suite complète : **51 réussis, 2 ignorés**, aucune régression.
+- Régressions UI dédiées : couverture QSS, localisation de tous les boutons standards, rôles sémantiques, accessibilité de la clé de licence, états CAD et non-chevauchement à la taille minimale.
+- Smoke test du candidat : `licensed-offline` et `fresh-unlicensed` réussis.
+- Smoke test après copie dans `dist-updated/CoproAuto` : `licensed-offline` et `fresh-unlicensed` réussis.
+- SHA-256 final : `D39DBE935DFEE2B34B0099CCF327CF2891C29870FDC7A42D11E32B06F3F27F5A`.
+- Authenticode : `NotSigned`, inchangé et acceptable pour ce MVP privé; une signature reste requise avant distribution commerciale.
 
-1. Initial light-theme pass matched the main reference, but the user identified a P1 readability failure on the licence-button hover state.
-2. Added explicit `:hover`, `:pressed` and `:focus` rules after the generic button states, plus a regression test.
-3. The post-fix native capture shows persistent white text on a darker teal background; no P0/P1/P2 issue remains.
+## Résultat
 
-## Verification
-
-- Primary interactions covered by the existing Qt UI test suite: project editing, level selection, part addition, validation refresh and unsaved-change discard.
-- Theme regression: default light palette, white sidebar and licence hover rule are asserted in `tests/test_ui.py`.
-- Full suite: 46 passed, 2 skipped.
-- Packaged executable: both `licensed-offline` and `fresh-unlicensed` smoke modes passed.
-
-## Follow-up polish
-
-- P3: a future settings control could expose the retained dark palette if users request manual theme switching; it is intentionally not part of this change.
+Aucun écart P0, P1 ou P2 ne subsiste dans les surfaces inspectées. Le package précédent est conservé dans `dist-updated/CoproAuto-pre-ui-ux-20260812` pour retour arrière local.
 
 final result: passed

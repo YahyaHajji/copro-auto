@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import os
+from decimal import Decimal
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton, QTableWidgetItem
+from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton, QTableWidgetItem, QWidget
 from PySide6.QtTest import QTest
 from PySide6.QtCore import Qt
 
@@ -37,6 +38,23 @@ def test_default_theme_is_light_with_a_white_sidebar() -> None:
     )
 
 
+def test_identity_form_and_time_editor_use_the_light_theme() -> None:
+    application = _application()
+    palette = apply_theme(application)
+    editor = ProjectEditor()
+
+    identity_content = editor.findChild(QWidget, "ProjectIdentityContent")
+    stylesheet = application.styleSheet()
+
+    assert identity_content is not None
+    assert (
+        f"QWidget#ProjectIdentityContent {{ background: {palette.surface}; "
+        f"color: {palette.text}; }}" in stylesheet
+    )
+    assert "QLineEdit, QDateEdit, QTimeEdit, QComboBox" in stylesheet
+    assert "QLineEdit:focus, QDateEdit:focus, QTimeEdit:focus, QComboBox:focus" in stylesheet
+
+
 def test_project_editor_preserves_manual_surface_decompositions() -> None:
     _application()
     editor = ProjectEditor()
@@ -49,6 +67,34 @@ def test_project_editor_preserves_manual_surface_decompositions() -> None:
     assert first_floor.cadastral_total == 80
     assert first_floor.architectural_total == 80
     assert [share.ten_thousandths for share in calculate_shares(project)] == [3522, 3239, 3239]
+    assert project.schema_version == 4
+    assert project.identity.project_time.isoformat(timespec="minutes") == "10:00"
+    assert project.identity.land_registry_office == "Meknès Al Ismaïlia"
+    assert project.identity.client.national_id == "AB123456"
+    assert project.identity.boundaries["northeast"].startswith("T.119761")
+    assert editor.levels.horizontalHeaderItem(2).text() == "Cotes début"
+    assert editor.levels.horizontalHeaderItem(3).text() == "Cotes fin"
+    assert editor.levels.horizontalHeaderItem(4).text() == "Hauteurs"
+    assert editor.parts.horizontalHeaderItem(4).text() == "Surface"
+
+
+def test_project_editor_parses_and_formats_multiple_level_measurements() -> None:
+    _application()
+    editor = ProjectEditor()
+    editor.set_project(build_yasmin_project())
+    editor.levels.item(0, 2).setText("+0,20")
+    editor.levels.item(0, 3).setText("+3,10 ; +5.70 ; +3,10")
+    editor.levels.item(0, 4).setText("2,90; 5.50")
+
+    project = editor.project()
+    editor.set_project(project)
+
+    assert project.levels[0].start_elevations == (Decimal("0.20"),)
+    assert project.levels[0].end_elevations == (Decimal("3.10"), Decimal("5.70"))
+    assert project.levels[0].interior_heights == (Decimal("2.90"), Decimal("5.50"))
+    assert editor.levels.item(0, 2).text() == "+0,20"
+    assert editor.levels.item(0, 3).text() == "+3,10 ; +5,70"
+    assert editor.levels.item(0, 4).text() == "2,90 ; 5,50"
 
 
 def test_selected_level_row_always_drives_parts_editor() -> None:
@@ -149,10 +195,9 @@ def test_discard_unsaved_changes_uses_button_value(monkeypatch) -> None:
     window = MainWindow()
     window.dirty = True
 
-    class DiscardResult:
-        def __eq__(self, other: object) -> bool:
-            return other == QMessageBox.StandardButton.Discard
-
-    monkeypatch.setattr(QMessageBox, "question", lambda *_args, **_kwargs: DiscardResult())
+    monkeypatch.setattr(
+        "copro_auto.ui.main_window.question",
+        lambda *_args, **_kwargs: QMessageBox.StandardButton.Discard,
+    )
 
     assert window._can_discard()

@@ -1007,6 +1007,15 @@ Les données restent locales. Les journaux peuvent contenir uniquement le nombre
 - Sources sauvegardées dans le commit `6201fec` et poussées sur `origin/codex/ui-ux-overhaul`; la PR #4 est mise à jour mais n'est pas fusionnée automatiquement dans `main`.
 - Serveur de licences déployé en production sur Vercel : déploiement `dpl_HCHrW59UfgjGkhtpCXDucHJU136e` en état `READY`. `https://copro-auto-license-api.vercel.app/health` retourne HTTP 200 avec `{"status":"ok"}`, ce qui vérifie aussi la connexion à la base. Aucun incident d'exécution n'a été détecté sur la dernière heure après déploiement.
 
+### Proposition UX — dashboard administrateur v2 du 29/08/2026
+
+- Décisions produit confirmées : informations système limitées et respectueuses de la vie privée, dates/heures en `Africa/Casablanca`, synthèse et filtres enrichis, activité contextualisée.
+- La proposition distingue l'occupation d'une place (`Actif`/`Libéré`) de la présence récente (`En ligne` si dernier contact inférieur à 20 minutes, sinon `Hors ligne`).
+- Le détail d'appareil prévu contient nom du poste, Windows/édition/build, architecture, version Copro Auto, identifiant support court, première activation, dernier contact et libération éventuelle. Numéros de série, MAC, IP complète et géolocalisation restent exclus.
+- Révision UX v2 : la page Activité reçoit une pagination serveur stable par curseur (25/50/100), recherche et filtres combinables, regroupement optionnel des vérifications automatiques, contexte client/appareil/origine, export CSV filtré et restauration de l'état après consultation d'une licence.
+- Spécification : `docs/admin-dashboard-v2/UX_SPEC.md`. Artifacts : `dashboard-overview`, `license-device-detail`, `activity-page` et `mobile-wireframe` en SVG et PNG.
+- Statut : UX v2 explicitement approuvée le 29/08/2026; dashboard administrateur v2 implémenté et vérifié localement. Aucun déploiement n’est autorisé dans ce jalon.
+
 ### [ORPHANS & PENDING]
 
 - [x] Obtenir l'approbation explicite de ce plan avant le jalon 1.
@@ -1017,3 +1026,5 @@ Les données restent locales. Les journaux peuvent contenir uniquement le nombre
 - [x] Exécuter et vérifier le jalon 3 : grammaire multi-cotes, hauteurs multiples, parcours EX 3 et inspection des cinq DOCX.
 - [x] Préparer et vérifier le paquet USB après autorisation explicite de distribution.
 - [ ] Obtenir le visa terrain du topographe sur le paquet distribué, notamment le cas à deux fins/deux hauteurs.
+- [x] Obtenir l'approbation explicite de `Dashboard administrateur UX v2 — 29/08/2026` avant implémentation.
+- [x] Implémenter et vérifier localement le dashboard administrateur v2 sans déploiement.

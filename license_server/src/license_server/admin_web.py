@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import hmac
 import logging
+import csv
+import io
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -77,6 +81,39 @@ def _address(request: Request) -> str:
 
 def _error(exc: AdminError) -> HTTPException:
     return HTTPException(exc.status_code, detail={"code": exc.code, "message": exc.message})
+
+
+def _activity_bounds(period: str, start_date: date | None, end_date: date | None) -> tuple[datetime | None, datetime | None]:
+    now = datetime.now(timezone.utc)
+    casablanca = ZoneInfo("Africa/Casablanca")
+    if period == "today":
+        local_start = datetime.combine(now.astimezone(casablanca).date(), time.min, casablanca)
+        return local_start.astimezone(timezone.utc), None
+    if period in {"7d", "30d"}:
+        return now - timedelta(days=int(period[:-1])), None
+    if period == "all":
+        return None, None
+    if period == "custom":
+        if start_date is None or end_date is None or end_date < start_date:
+            raise AdminError("invalid_period", "Choisissez une période personnalisée valide.")
+        local_start = datetime.combine(start_date, time.min, casablanca)
+        local_end = datetime.combine(end_date + timedelta(days=1), time.min, casablanca)
+        return local_start.astimezone(timezone.utc), local_end.astimezone(timezone.utc)
+    raise AdminError("invalid_period", "Période d'activité invalide.")
+
+
+def _activity_label(event_type: str) -> str:
+    return {
+        "license_created": "Licence créée",
+        "activate": "Appareil activé",
+        "refresh": "Licence vérifiée",
+        "deactivate": "Appareil désactivé",
+        "admin_license_renewed": "Licence prolongée",
+        "admin_license_revoked": "Licence révoquée",
+        "admin_license_reactivated": "Licence réactivée",
+        "admin_activation_released": "Poste libéré",
+        "admin_audit_exported": "Journal exporté",
+    }.get(event_type, event_type)
 
 
 @router.get("")
@@ -224,7 +261,54 @@ def release_activation(
 
 @router.get("/api/audit")
 def audit(
+    limit: int = Query(25), cursor: str | None = None, direction: str = Query("next"),
+    search: str = Query("", max_length=200), category: str = Query("all"), origin: str = Query("all"),
+    period: str = Query("30d"), start_date: date | None = None, end_date: date | None = None,
+    include_refresh: bool = False,
     session: Session = Depends(database), service: AdminService = Depends(admin_service),
     _claims: AdminSession = Depends(require_admin),
 ):
-    return {"items": service.audit_events(session)}
+    try:
+        start, end = _activity_bounds(period, start_date, end_date)
+        return service.activity_page(
+            session, limit=limit, cursor=cursor, direction=direction, search=search,
+            category=category, origin=origin, start=start, end=end, include_refresh=include_refresh,
+        )
+    except AdminError as exc:
+        raise _error(exc) from exc
+
+
+@router.post("/api/audit/export")
+def export_audit(
+    search: str = Query("", max_length=200), category: str = Query("all"), origin: str = Query("all"),
+    period: str = Query("30d"), start_date: date | None = None, end_date: date | None = None,
+    include_refresh: bool = False, session: Session = Depends(database),
+    service: AdminService = Depends(admin_service), _claims: AdminSession = Depends(require_csrf),
+):
+    try:
+        start, end = _activity_bounds(period, start_date, end_date)
+        items = service.export_activity(
+            session, search=search, category=category, origin=origin, start=start, end=end,
+            include_refresh=include_refresh,
+        )
+    except AdminError as exc:
+        raise _error(exc) from exc
+    output = io.StringIO(newline="")
+    writer = csv.writer(output, delimiter=";")
+    writer.writerow(("Date et heure (Casablanca)", "Événement", "Client", "Appareil", "Origine"))
+    casablanca = ZoneInfo("Africa/Casablanca")
+    for item in items:
+        moment = datetime.fromisoformat(item["created_at"]).astimezone(casablanca)
+        writer.writerow((
+            moment.strftime("%d/%m/%Y %H:%M"),
+            _activity_label(item["event_type"]),
+            item["organization"] or "",
+            item["device_label"] or "",
+            "Application" if item["origin"] == "application" else "Administrateur",
+        ))
+    filename = f"copro-auto-activite-{datetime.now(casablanca):%Y%m%d-%H%M}.csv"
+    return Response(
+        content="\ufeff" + output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

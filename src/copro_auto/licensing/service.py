@@ -29,6 +29,22 @@ PRODUCTIVE_STATES = {
 }
 
 
+def device_metadata() -> dict[str, str]:
+    edition = ""
+    if platform.system() == "Windows":
+        try:
+            edition = platform.win32_edition()
+        except (AttributeError, OSError):
+            edition = ""
+    return {
+        "os_name": platform.system(),
+        "os_edition": edition,
+        "os_version": platform.release(),
+        "os_build": platform.version(),
+        "architecture": platform.machine(),
+    }
+
+
 class LicenseState(StrEnum):
     UNLICENSED = "unlicensed"
     TRIAL_ACTIVE = "trial_active"
@@ -135,7 +151,9 @@ class LicenseService:
             return self._activate_offline_trial(normalized, now=now)
         if self.client is None or self.verifier is None:
             return LicenseDecision(LicenseState.INVALID, "Service de licence non configuré")
-        response = self.client.activate(normalized, device_fingerprint(), platform.node(), __version__)
+        response = self.client.activate(
+            normalized, device_fingerprint(), platform.node(), __version__, metadata=device_metadata(),
+        )
         claims = self.verifier.verify(response.token)
         if claims.device_hash != device_fingerprint():
             raise ValueError("Le serveur a retourné un jeton pour un autre appareil.")
@@ -150,7 +168,10 @@ class LicenseService:
         if self._is_portable_offline_trial(claims):
             return self.evaluate(now=now)
         try:
-            token = self.client.refresh(claims.activation_id, record.activation_secret, device_fingerprint(), __version__)
+            token = self.client.refresh(
+                claims.activation_id, record.activation_secret, device_fingerprint(), __version__,
+                metadata=device_metadata(),
+            )
         except LicenseApiError as exc:
             denial = self._authoritative_denial(exc)
             if denial is None:

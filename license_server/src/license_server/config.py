@@ -15,6 +15,7 @@ class Settings:
     lease_days: int = 1
     admin_password_hash: str = ""
     admin_session_secret: str = ""
+    desktop_current_version: str = "0.1.0"
 
     @classmethod
     def from_environment(cls) -> "Settings":
@@ -34,4 +35,5 @@ class Settings:
             int(os.environ.get("LEASE_DAYS", "1")),
             os.environ.get("ADMIN_PASSWORD_HASH", ""),
             os.environ.get("ADMIN_SESSION_SECRET", ""),
+            os.environ.get("DESKTOP_CURRENT_VERSION", "0.1.0"),
         )

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844" role="img" aria-labelledby="title desc">
+  <title id="title">Wireframe responsive du dashboard administrateur</title>
+  <desc id="desc">Disposition téléphone avec navigation, métriques défilables, filtres et cartes de licences.</desc>
+  <style>.t{font-family:Inter,"Segoe UI",Arial,sans-serif;fill:#173134}.m{fill:#678084}.white{fill:#fff}.side{fill:#a7c1c0}.b{font-weight:700}.s{font-size:11px}.body{font-size:13px}.h{font-size:24px;font-weight:750}</style>
+  <rect width="390" height="844" fill="#f3f7f6"/>
+  <rect width="390" height="66" fill="#102c2f"/><rect x="14" y="12" width="42" height="42" rx="12" fill="#168f86"/><text x="35" y="39" text-anchor="middle" class="t white b body">CA</text><text x="69" y="31" class="t white b body">COPRO AUTO</text><text x="69" y="48" class="t side s">Administration</text><text x="300" y="39" class="t white body">▦</text><text x="347" y="39" class="t side body">↻</text>
+  <g transform="translate(16,88)">
+    <text class="t h">Licences</text><text y="25" class="t m s">29 août 2026 à 14:35 · Casablanca</text>
+    <rect x="302" y="-15" width="56" height="42" rx="11" fill="#168f86"/><text x="330" y="11" text-anchor="middle" class="t b" fill="#fff" font-size="20">＋</text>
+    <g transform="translate(0,53)">
+      <rect width="171" height="84" rx="14" fill="#fff" stroke="#dce7e5"/><text x="14" y="23" class="t m s b">VALIDES</text><text x="14" y="58" class="t b" fill="#0e7069" font-size="28">12</text>
+      <rect x="183" width="175" height="84" rx="14" fill="#fff3d6" stroke="#d3a642"/><text x="197" y="23" class="t s b" fill="#765d1e">À RENOUVELER</text><text x="197" y="58" class="t b" fill="#9a6700" font-size="28">3</text>
+      <text x="0" y="106" class="t m s">Glissez horizontalement pour les autres indicateurs  →</text>
+    </g>
+    <rect y="180" width="358" height="44" rx="11" fill="#fff" stroke="#cbdad8"/><text x="15" y="207" class="t m body">⌕  Rechercher…</text>
+    <rect y="236" width="120" height="36" rx="10" fill="#fff3d6" stroke="#d3a642"/><text x="60" y="259" text-anchor="middle" class="t s b" fill="#765d1e">Échéance ≤30 j</text><rect x="130" y="236" width="104" height="36" rx="10" fill="#fff" stroke="#dce7e5"/><text x="182" y="259" text-anchor="middle" class="t s b">Statut · Tous⌄</text><rect x="244" y="236" width="114" height="36" rx="10" fill="#fff" stroke="#dce7e5"/><text x="301" y="259" text-anchor="middle" class="t s b">Plus de filtres</text>
+
+    <g transform="translate(0,292)">
+      <rect width="358" height="174" rx="16" fill="#fff" stroke="#d3a642"/>
+      <text x="18" y="30" class="t b body">Cabinet Atlas</text><text x="18" y="51" class="t m s">Bureau · •••• 9F2A</text><rect x="244" y="16" width="96" height="26" rx="13" fill="#fff3d6"/><text x="292" y="34" text-anchor="middle" class="t s b" fill="#765d1e">À renouveler</text>
+      <line x1="18" y1="69" x2="340" y2="69" stroke="#e8efee"/>
+      <text x="18" y="95" class="t m s">PLACES</text><text x="18" y="118" class="t b body">2 / 2</text><text x="135" y="95" class="t m s">ACTIVITÉ</text><circle cx="140" cy="113" r="4" fill="#2da879"/><text x="150" y="118" class="t body">1 en ligne</text>
+      <text x="18" y="146" class="t m s">Échéance : 10 sept. 2026 à 23:59</text><text x="332" y="146" text-anchor="end" class="t" fill="#168f86" font-size="20">›</text>
+    </g>
+    <g transform="translate(0,480)">
+      <rect width="358" height="164" rx="16" fill="#fff" stroke="#dce7e5"/>
+      <text x="18" y="30" class="t b body">Cabinet Titan</text><text x="18" y="51" class="t m s">Individuel · •••• 48D1</text><rect x="278" y="16" width="62" height="26" rx="13" fill="#e1f4eb"/><text x="309" y="34" text-anchor="middle" class="t s b" fill="#12674d">Active</text>
+      <line x1="18" y1="69" x2="340" y2="69" stroke="#e8efee"/>
+      <text x="18" y="95" class="t m s">PLACES</text><text x="18" y="118" class="t b body">1 / 2</text><text x="135" y="95" class="t m s">DERNIER CONTACT</text><text x="135" y="118" class="t body">29 août à 14:27</text>
+      <text x="18" y="146" class="t m s">Échéance : 10 sept. 2027 à 23:59</text><text x="332" y="146" text-anchor="end" class="t" fill="#168f86" font-size="20">›</text>
+    </g>
+    <text x="0" y="680" class="t m s">2 résultats sur 14 · Les filtres restent actifs</text>
+  </g>
+  <rect x="185" y="808" width="189" height="24" rx="12" fill="#102c2f"/><text x="279" y="824" text-anchor="middle" class="t white s b">WIREFRAME MOBILE · UX v1</text>
+</svg>

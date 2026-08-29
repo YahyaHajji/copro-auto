@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Copro Auto — Administration des licences</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b8f87'/%3E%3Ctext x='16' y='21' text-anchor='middle' font-family='Arial' font-size='14' font-weight='700' fill='white'%3ECA%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="/admin/static/admin.css">
   <script src="/admin/static/admin.js" defer></script>
 </head>
@@ -28,8 +29,8 @@
     <aside class="sidebar">
       <div class="brand-row"><span class="brand-mark small">CA</span><div><strong>COPRO AUTO</strong><small>Administration</small></div></div>
       <nav aria-label="Navigation principale">
-        <button class="nav-item active" data-panel="licenses"><span>▦</span> Licences</button>
-        <button class="nav-item" data-panel="activity"><span>↻</span> Activité</button>
+        <button class="nav-item active" data-panel="licenses" aria-current="page"><span aria-hidden="true">▦</span> Licences</button>
+        <button class="nav-item" data-panel="activity"><span aria-hidden="true">↻</span> Activité</button>
       </nav>
       <div class="sidebar-foot">
         <span class="status-dot"></span><span>Serveur opérationnel</span>
@@ -37,42 +38,86 @@
       </div>
     </aside>
 
-    <section class="workspace">
+    <main class="workspace">
       <header class="topbar">
-        <div><p class="eyebrow">GESTION CENTRALISÉE</p><h1 id="page-title">Licences</h1></div>
-        <button id="new-license-button" class="button primary">＋ Nouvelle licence</button>
+        <div><p id="page-eyebrow" class="eyebrow">GESTION CENTRALISÉE</p><h1 id="page-title">Licences</h1><p id="page-updated" class="muted page-updated">Chargement…</p></div>
+        <div class="topbar-actions">
+          <button id="export-audit-button" class="button secondary" hidden>⇩ Exporter CSV</button>
+          <button id="refresh-button" class="button secondary">↻ Actualiser</button>
+          <button id="new-license-button" class="button primary">＋ Nouvelle licence</button>
+        </div>
       </header>
+      <div id="network-banner" class="banner error" role="alert" hidden><span id="network-message"></span><button id="retry-button" class="text-button dark">Réessayer</button></div>
 
-      <div id="licenses-panel" class="panel-view">
-        <section class="metric-grid" aria-label="Résumé des licences">
-          <article class="metric"><span>Total</span><strong id="metric-total">—</strong><small>licences créées</small></article>
-          <article class="metric"><span>Valides</span><strong id="metric-valid">—</strong><small>actives et non expirées</small></article>
-          <article class="metric"><span>Essais</span><strong id="metric-trials">—</strong><small>licences d'évaluation</small></article>
-          <article class="metric"><span>Postes actifs</span><strong id="metric-devices">—</strong><small>ordinateurs connectés</small></article>
-        </section>
+      <section id="licenses-panel" class="panel-view" aria-labelledby="page-title">
+        <div class="metric-grid five" aria-label="Résumé des licences">
+          <button class="metric" data-metric-filter="valid"><span>Licences valides</span><strong id="metric-valid">—</strong><small id="metric-total">sur — licences</small></button>
+          <button class="metric warning" data-metric-filter="expiring"><span>À renouveler</span><strong id="metric-expiring">—</strong><small>dans les 30 prochains jours</small></button>
+          <button class="metric" data-metric-filter="occupied"><span>Places occupées</span><strong id="metric-devices">—</strong><small id="metric-capacity">sur — places</small></button>
+          <button class="metric" data-metric-filter="online"><span>En ligne maintenant</span><strong id="metric-online">—</strong><small>contact depuis moins de 20 min</small></button>
+          <button class="metric" data-metric-filter="outdated"><span>Versions obsolètes</span><strong id="metric-outdated">—</strong><small id="metric-current-version">version recommandée —</small></button>
+        </div>
 
-        <section class="card table-card">
+        <section class="card table-card" aria-labelledby="licenses-title">
           <div class="card-head">
-            <div><h2>Toutes les licences</h2><p class="muted">Cliquez sur une ligne pour voir les appareils et les actions.</p></div>
-            <label class="search"><span aria-hidden="true">⌕</span><input id="license-search" type="search" placeholder="Rechercher un client…"></label>
+            <div><h2 id="licenses-title">Toutes les licences</h2><p id="license-result-count" class="muted">Chargement…</p></div>
+            <label class="search"><span aria-hidden="true">⌕</span><span class="sr-only">Rechercher</span><input id="license-search" type="search" placeholder="Rechercher un client, un appareil…"></label>
+          </div>
+          <div class="filter-bar" aria-label="Filtres des licences">
+            <label>Statut<select id="license-status-filter"><option value="all">Tous</option><option value="active">Active</option><option value="revoked">Révoquée</option><option value="expired">Expirée</option></select></label>
+            <label>Type<select id="license-type-filter"><option value="all">Tous</option><option value="commercial">Commerciale</option><option value="trial">Essai</option></select></label>
+            <label>Échéance<select id="license-expiry-filter"><option value="all">Toutes</option><option value="30d">Dans 30 jours</option><option value="expired">Expirées</option></select></label>
+            <label>Activité<select id="license-activity-filter"><option value="all">Toutes</option><option value="online">En ligne</option><option value="offline">Hors ligne</option><option value="outdated">Version obsolète</option></select></label>
+            <label class="sort-control">Trier<select id="license-sort"><option value="created-desc">Plus récentes</option><option value="expiry-asc">Échéance proche</option><option value="client-asc">Client A–Z</option><option value="activity-desc">Activité récente</option></select></label>
+            <button id="reset-license-filters" class="text-button dark" hidden>Effacer les filtres</button>
           </div>
           <div class="table-wrap">
-            <table>
-              <thead><tr><th>Client</th><th>Clé</th><th>Plan</th><th>Statut</th><th>Postes</th><th>Échéance</th><th></th></tr></thead>
+            <table class="license-table">
+              <thead><tr><th>Client</th><th>Licence</th><th>Statut</th><th>Places</th><th>Activité</th><th>Échéance</th><th><span class="sr-only">Ouvrir</span></th></tr></thead>
               <tbody id="licenses-body"></tbody>
             </table>
           </div>
-          <div id="licenses-empty" class="empty-state" hidden><strong>Aucune licence</strong><span>Créez votre première licence pour commencer.</span></div>
+          <div id="licenses-empty" class="empty-state" hidden><strong>Aucune licence trouvée</strong><span id="licenses-empty-text">Modifiez vos filtres ou créez une licence.</span><button id="empty-reset-button" class="button secondary">Effacer les filtres</button></div>
         </section>
-      </div>
+      </section>
 
-      <div id="activity-panel" class="panel-view" hidden>
-        <section class="card">
-          <div class="card-head"><div><h2>Activité récente</h2><p class="muted">Journal des activations et actions administratives.</p></div></div>
-          <div id="audit-list" class="timeline"></div>
+      <section id="activity-panel" class="panel-view" aria-labelledby="page-title" hidden>
+        <div class="metric-grid four activity-metrics" aria-label="Résumé de l'activité filtrée">
+          <article class="metric static"><span>Événements</span><strong id="activity-events">—</strong><small>sur la période filtrée</small></article>
+          <article class="metric static"><span>Activations</span><strong id="activity-activations">—</strong><small>nouveaux postes</small></article>
+          <article class="metric static"><span>Actions administratives</span><strong id="activity-admin">—</strong><small>gestion des licences</small></article>
+          <article class="metric static"><span>Postes libérés</span><strong id="activity-released">—</strong><small>places récupérées</small></article>
+        </div>
+        <section class="card activity-card" aria-labelledby="activity-results-title">
+          <div class="activity-toolbar">
+            <label class="search"><span aria-hidden="true">⌕</span><span class="sr-only">Rechercher dans l'activité</span><input id="activity-search" type="search" placeholder="Rechercher un client ou un appareil…"></label>
+            <label>Période<select id="activity-period"><option value="today">Aujourd'hui</option><option value="7d">7 jours</option><option value="30d" selected>30 jours</option><option value="all">Toutes</option><option value="custom">Personnalisée</option></select></label>
+            <label>Catégorie<select id="activity-category"><option value="all">Toutes</option><option value="licenses">Licences</option><option value="devices">Appareils</option><option value="administration">Administration</option></select></label>
+            <label>Origine<select id="activity-origin"><option value="all">Toutes</option><option value="application">Application</option><option value="administrator">Administrateur</option></select></label>
+            <label class="switch-label"><input id="activity-refresh-filter" type="checkbox" role="switch"> <span>Afficher les vérifications</span></label>
+            <button id="reset-activity-filters" class="text-button dark" hidden>Effacer</button>
+          </div>
+          <div id="custom-period" class="custom-period" hidden>
+            <label>Date de début<input id="activity-start" type="date"></label>
+            <label>Date de fin<input id="activity-end" type="date"></label>
+            <button id="apply-custom-period" class="button secondary">Appliquer</button>
+          </div>
+          <h2 id="activity-results-title" class="sr-only" tabindex="-1">Résultats d'activité</h2>
+          <div class="table-wrap">
+            <table class="activity-table">
+              <thead><tr><th aria-sort="descending">Date et heure</th><th>Événement</th><th>Client</th><th>Appareil</th><th>Origine</th><th><span class="sr-only">Ouvrir</span></th></tr></thead>
+              <tbody id="activity-body"></tbody>
+            </table>
+          </div>
+          <div id="activity-empty" class="empty-state compact-empty" hidden><strong>Aucune activité trouvée</strong><span>Modifiez la période ou les filtres.</span><button id="activity-empty-reset" class="button secondary">Effacer les filtres</button></div>
+          <footer class="pagination" aria-label="Pagination de l'activité">
+            <span id="activity-range" class="muted">—</span>
+            <label>Lignes par page<select id="activity-page-size"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></label>
+            <div class="pagination-actions"><button id="activity-previous" class="button secondary">‹ Précédent</button><span id="activity-page" class="page-chip">Page 1</span><button id="activity-next" class="button secondary">Suivant ›</button></div>
+          </footer>
         </section>
-      </div>
-    </section>
+      </section>
+    </main>
   </div>
 
   <dialog id="create-dialog" class="dialog">
@@ -91,17 +136,22 @@
   </dialog>
 
   <dialog id="key-dialog" class="dialog compact">
-    <div class="success-icon">✓</div><h2>Licence créée</h2>
-    <p class="muted center">Copiez cette clé maintenant. Elle ne pourra pas être affichée une deuxième fois.</p>
-    <div class="key-box"><code id="created-key"></code><button id="copy-key" class="button secondary">Copier</button></div>
-    <button id="close-key" class="button primary full">J'ai sauvegardé la clé</button>
+    <div class="success-icon">✓</div><h2>Licence créée</h2><p class="muted center">Copiez cette clé maintenant. Elle ne pourra pas être affichée une deuxième fois.</p>
+    <div class="key-box"><code id="created-key"></code><button id="copy-key" class="button secondary">Copier</button></div><button id="close-key" class="button primary full">J'ai sauvegardé la clé</button>
   </dialog>
 
-  <dialog id="detail-dialog" class="dialog detail-dialog">
-    <div class="dialog-head"><div><p class="eyebrow">DÉTAIL DE LA LICENCE</p><h2 id="detail-title">—</h2></div><button id="close-detail" class="icon-button" aria-label="Fermer">×</button></div>
-    <div id="detail-content"></div>
+  <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
+  <aside id="detail-drawer" class="detail-drawer" role="dialog" aria-modal="true" aria-labelledby="detail-title" hidden>
+    <header class="drawer-head"><div><p class="eyebrow">DÉTAIL DE LA LICENCE</p><h2 id="detail-title">—</h2><p id="detail-subtitle" class="muted"></p></div><button id="close-detail" class="icon-button" aria-label="Fermer">×</button></header>
+    <div id="detail-content" class="drawer-content"></div>
+  </aside>
+
+  <dialog id="confirm-dialog" class="dialog compact" aria-labelledby="confirm-title">
+    <div class="danger-icon">!</div><h2 id="confirm-title">Confirmer l'action</h2><p id="confirm-message" class="muted center"></p>
+    <div class="dialog-actions center-actions"><button id="confirm-cancel" class="button secondary">Annuler</button><button id="confirm-submit" class="button danger solid">Confirmer</button></div>
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <div id="live-status" class="sr-only" aria-live="polite"></div>
 </body>
 </html>

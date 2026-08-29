@@ -65,11 +65,26 @@ def test_initial_migration_is_idempotent_on_real_postgresql(postgres_url) -> Non
                 "SELECT tablename FROM pg_tables WHERE schemaname = 'public'",
             ).fetchall()
         }
+        activation_columns = {
+            row[0]
+            for row in connection.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema = 'public' AND table_name = 'activations'",
+            ).fetchall()
+        }
+        indexes = {
+            row[0]
+            for row in connection.execute(
+                "SELECT indexname FROM pg_indexes WHERE schemaname = 'public'",
+            ).fetchall()
+        }
 
     assert tables == {
         "organizations", "licenses", "activations", "audit_events", "activation_attempts",
         "admin_login_attempts",
     }
+    assert {"os_name", "os_edition", "os_version", "os_build", "architecture"} <= activation_columns
+    assert "ix_audit_events_created_id" in indexes
 
     settings = Settings(postgres_url, Ed25519PrivateKey.generate(), "postgres-test-pepper", 30)
     app = create_app(settings)

@@ -6,13 +6,14 @@ from datetime import datetime, timedelta, timezone
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from copro_auto.licensing.client import LicenseApiError
+from copro_auto.licensing.client import LicenseApiClient, LicenseApiError
 from copro_auto.licensing.service import (
     OFFLINE_TRIAL_ACTIVATION_PREFIX,
     OFFLINE_TRIAL_DEVICE_HASH,
     OFFLINE_TRIAL_KEY_PREFIX,
     LicenseService,
     LicenseState,
+    device_metadata,
 )
 from copro_auto.licensing.token_store import TokenStore, TokenVerifier, device_fingerprint
 from license_server.signing import sign_claims
@@ -174,3 +175,31 @@ def test_portable_offline_trial_rejects_more_than_30_days(tmp_path, monkeypatch)
         assert "30 jours" in str(exc)
     else:
         raise AssertionError("Une clé d'essai hors ligne de plus de 30 jours a été acceptée")
+
+
+def test_device_metadata_is_privacy_safe_and_sent_to_license_api(monkeypatch) -> None:
+    monkeypatch.setattr("copro_auto.licensing.service.platform.system", lambda: "Windows")
+    monkeypatch.setattr("copro_auto.licensing.service.platform.win32_edition", lambda: "Professional")
+    monkeypatch.setattr("copro_auto.licensing.service.platform.release", lambda: "11")
+    monkeypatch.setattr("copro_auto.licensing.service.platform.version", lambda: "26100.4946")
+    monkeypatch.setattr("copro_auto.licensing.service.platform.machine", lambda: "AMD64")
+    metadata = device_metadata()
+
+    assert metadata == {
+        "os_name": "Windows", "os_edition": "Professional", "os_version": "11",
+        "os_build": "26100.4946", "architecture": "AMD64",
+    }
+    assert not ({"ip", "mac", "serial", "username", "location"} & metadata.keys())
+
+    client = LicenseApiClient("https://licence.test")
+    requests: list[tuple[str, dict]] = []
+
+    def fake_post(endpoint: str, payload: dict) -> dict:
+        requests.append((endpoint, payload))
+        return {"token": "signed-token", "activation_secret": "secret-value"}
+
+    monkeypatch.setattr(client, "_post", fake_post)
+    response = client.activate("COPRO-TEST-KEY", "d" * 64, "PC test", "0.2.0", metadata=metadata)
+    assert response.token == "signed-token"
+    assert requests[0][0] == "/v1/activate"
+    assert requests[0][1]["os_build"] == "26100.4946"

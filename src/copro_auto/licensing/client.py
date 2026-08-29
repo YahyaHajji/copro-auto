@@ -47,18 +47,28 @@ class LicenseApiClient:
             raise LicenseApiError("Réponse invalide du serveur de licence.")
         return data
 
-    def activate(self, license_key: str, device_hash: str, device_label: str, app_version: str) -> ActivationResponse:
-        data = self._post("/v1/activate", {
+    def activate(
+        self, license_key: str, device_hash: str, device_label: str, app_version: str,
+        *, metadata: dict[str, str] | None = None,
+    ) -> ActivationResponse:
+        payload = {
             "license_key": license_key.strip(), "device_hash": device_hash,
             "device_label": device_label, "app_version": app_version,
-        })
+        }
+        payload.update(metadata or {})
+        data = self._post("/v1/activate", payload)
         return ActivationResponse(token=str(data["token"]), activation_secret=str(data["activation_secret"]))
 
-    def refresh(self, activation_id: str, activation_secret: str, device_hash: str, app_version: str) -> str:
-        data = self._post("/v1/refresh", {
+    def refresh(
+        self, activation_id: str, activation_secret: str, device_hash: str, app_version: str,
+        *, metadata: dict[str, str] | None = None,
+    ) -> str:
+        payload = {
             "activation_id": activation_id, "activation_secret": activation_secret,
             "device_hash": device_hash, "app_version": app_version,
-        })
+        }
+        payload.update(metadata or {})
+        data = self._post("/v1/refresh", payload)
         return str(data["token"])
 
     def deactivate(self, activation_id: str, activation_secret: str) -> None:
